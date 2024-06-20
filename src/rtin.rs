@@ -1,9 +1,10 @@
 use anyhow::{anyhow, Result};
-use binary_tree::count::CountTree;
 use image::{io::Reader, ImageBuffer, Luma};
 use nalgebra::Vector2;
-use std::num;
 use std::path::Path;
+
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 struct Label(u32);
@@ -11,36 +12,48 @@ struct Label(u32);
 type Triangle<T> = (Vector2<T>, Vector2<T>, Vector2<T>);
 type Heightmap = ImageBuffer<Luma<u16>, Vec<u16>>;
 type Coords = Vector2<u32>;
+
+// All the data that can processed offline for a heightmap. Includes an error map
+// of the rtin hierarchy.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct RtinData {
+    grid_side_length: u32,
+    errors: Vec<f32>,
+}
 pub struct Options {
-    error_threshold: f32,
+    _error_threshold: f32,
 }
 impl Default for Options {
     fn default() -> Options {
         Options {
-            error_threshold: 0.0,
+            _error_threshold: 0.0,
         }
     }
 }
 pub struct Vertices;
 
-pub fn from_img_path<P: AsRef<Path>>(path: P, options: Options) -> Result<Vertices> {
+pub fn preprocess_heightmap_from_img_path<P: AsRef<Path>>(path: P) -> Result<RtinData> {
     let img: Heightmap = Reader::open(path.as_ref())?.decode()?.into_luma16();
-    from_img(img, options)
+    preprocess_heightmap_from_img(&img)
 }
 
-pub fn from_img_bytes(img_buffer: &[u8], options: Options) -> Result<Vertices> {
+pub fn preprocess_heightmap_from_img_bytes(img_buffer: &[u8]) -> Result<RtinData> {
     let img: Heightmap = Reader::new(std::io::Cursor::new(img_buffer))
         .with_guessed_format()?
         .decode()?
         .into_luma16();
 
-    from_img(img, options)
+    preprocess_heightmap_from_img(&img)
 }
 
-pub fn from_img(img: Heightmap, options: Options) -> Result<Vertices> {
-    let mut ct: CountTree<f16> = CountTree::new();
-    let (x, y) = img.dimensions();
-    println!("{} x {} heightmap", x, y);
+pub fn preprocess_heightmap_from_img(img: &Heightmap) -> Result<RtinData> {
+    preprocess_heightmap(&img)
+}
+
+// For the smallest possible RTIN representation, with a dense configuration of triangles
+// Calculate the error of the covering triangle.
+pub fn preprocess_heightmap(heightmap: &Heightmap) -> Result<RtinData> {
+    let (x, y) = heightmap.dimensions();
     if x != y {
         return Err(anyhow!(
             "A square heightmap is required, got {} x {}.",
@@ -51,32 +64,19 @@ pub fn from_img(img: Heightmap, options: Options) -> Result<Vertices> {
     if !(x - 1).is_power_of_two() {
         return Err(anyhow!("rtin only works when the dimensions of the heightmap are 2^k + 1 x 2^k + 1 for some integer k. Got: {} x {}", x, y));
     }
-
-    let num_small_triangles = x * x;
-
-    println!("{:?}", img.as_raw().iter().max());
-    Ok(Vertices)
-}
-
-// For the smallest possible RTIN representation, with a dense configuration of triangles
-// Calculate the error of the covering triangle.
-fn calc_error_map(heightmap: &Heightmap) -> Vec<f32> {
-    let side = heightmap.width();
-
     // "If the original input was a 2^k + 1 x 2^k + 1 array, the binary tree representing the hierarchy
     // is the complete binary tree of depth 2k + 1"
     // side = 2^k + 1
     // side - 1 = 2^k
     // log2(side - 1) = k
-    let k = (side - 1).ilog2();
+    let k = (x - 1).ilog2();
     let d = 2 * k + 1;
     // A complete binary tree of depth d contains 2^d - 1 nodes.
     // We are going to compute an error for every triangle in the hierarchy of rtin approximations
     let error_len: u32 = 2u32.pow(d) - 1;
-    // We're going to have an unused 0 index
-    let mut errors: Vec<f32> = Vec::with_capacity(error_len as usize + 1);
+    let mut errors: Vec<f32> = Vec::with_capacity(error_len as usize);
 
-    println!("side: {side}, k: {k}, d: {d}, error_len: {error_len}");
+    // println!("side: {x}, k: {k}, d: {d}, error_len: {error_len}");
 
     /*
        Choice of error measure isn't specified by the Evans paper.
@@ -86,20 +86,28 @@ fn calc_error_map(heightmap: &Heightmap) -> Vec<f32> {
 
        Other possible error measures could include: average distance between covered points and triangle,
        RMS of distance between covered points and triangle, etc. It likely does not matter a lot, so let's
-       take the max.
+       do the same as the paper: the error of a triangle is the maximum pointwise error between the height
+       of a the rtin trinagle at a lattice point and the heightmap's true value for the height at that point.
 
        For our purposes, a point is 'covered' by the triangle if it is inside the triangle's projection
-       onto the xy plane. The height of the triangle at a point p is the barymetric interopolation of the
-       height of the triangle's three vertices at that point.
+       onto the xy plane. The height of the triangle at a point p is the  interpolation of the
+       height of the triangle's three vertices at that point (via barymetric coordinates).
 
     */
-    for i in 1..error_len + 1 {
+    for i in 0..error_len {
+        if i == 0 {
+            // i == 0 is the "root of the rtin hierarchy".
+            // Unlike all other nodes, this node logically corresponds to a square - the original, unpartioned square.
+            // Most rtin algorithms, including mesh extraction, can't do anything with the root. Its error is undefined.
+            errors.push(0.0);
+            continue;
+        }
         let label = idx_to_label(i);
-        let coords = coords(label, side);
+        let coords = coords(label, x);
 
-        let a = vec2(coords.0[0] as i32, coords.0[1] as i32);
-        let b = vec2(coords.1[0] as i32, coords.1[1] as i32);
-        let c = vec2(coords.2[0] as i32, coords.2[1] as i32);
+        let a = vec2(coords.0[0] as f32, coords.0[1] as f32);
+        let b = vec2(coords.1[0] as f32, coords.1[1] as f32);
+        let c = vec2(coords.2[0] as f32, coords.2[1] as f32);
 
         let v0 = b - a;
         let v1 = c - a;
@@ -139,16 +147,20 @@ fn calc_error_map(heightmap: &Heightmap) -> Vec<f32> {
             let interpolated = a_z * i + b_z * j + c_z as f32 * k;
             let true_height = heightmap.get_pixel(p[0] as u32, p[1] as u32)[0] as f32;
             let error = (interpolated - true_height).abs();
-            println!("i: {i:.03}, j: {j:.03}, k: {k:03}, error: {error}, current max: {max}, true: {true_height}, interpolated: {interpolated}");
+            // println!("i: {i:.03}, j: {j:.03}, k: {k:03}, error: {error}, current max: {max}, true: {true_height}, interpolated: {interpolated}");
             max = error.max(max);
         }
 
         errors.push(max);
     }
-    errors
+
+    Ok(RtinData {
+        grid_side_length: x,
+        errors,
+    })
 }
 
-fn barycentric_coordinates(p: Vector2<i32>, (a, b, c): Triangle<i32>) -> (f32, f32, f32) {
+fn _barycentric_coordinates(p: Vector2<i32>, (a, b, c): Triangle<i32>) -> (f32, f32, f32) {
     // https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
     let v0 = b - a;
     let v1 = c - a;
@@ -166,15 +178,15 @@ fn barycentric_coordinates(p: Vector2<i32>, (a, b, c): Triangle<i32>) -> (f32, f
 
     (i, j, k)
 }
-fn points_in_bounding_box((a, b, c): Triangle<i32>) -> Vec<Vector2<i32>> {
+fn points_in_bounding_box((a, b, c): Triangle<f32>) -> Vec<Vector2<f32>> {
     let mut points = vec![];
 
     let bottom_left = vec2(a[0].min(b[0]).min(c[0]), a[1].min(b[1]).min(c[1]));
     let top_right = vec2(a[0].max(b[0]).max(c[0]), a[1].max(b[1]).max(c[1]));
 
-    for i in bottom_left[0]..=top_right[0] {
-        for j in bottom_left[1]..=top_right[1] {
-            points.push(vec2(i, j));
+    for i in bottom_left[0] as u32..=top_right[0] as u32 {
+        for j in bottom_left[1] as u32..=top_right[1] as u32 {
+            points.push(vec2(i as f32, j as f32));
         }
     }
     points
@@ -268,7 +280,7 @@ fn idx_depth(idx: u32) -> u32 {
 }
 
 // Given the indice into the bintree of a node, return the indices of its two children, if they exist.
-fn child_indexes(i: u32, grid_size: u32) -> Option<(u32, u32)> {
+pub fn child_indexes(i: u32, grid_size: u32) -> Option<(u32, u32)> {
     if i >= grid_size / 2 {
         return None;
     }
@@ -532,7 +544,7 @@ mod test {
     }
 
     #[test]
-    fn calc_error_map_test() {
+    fn preprocess_heightmap_test() {
         let heightmap = Heightmap::from_vec(
             9,
             9,
@@ -545,11 +557,11 @@ mod test {
             ],
         )
         .unwrap();
-        let errors = calc_error_map(&heightmap);
+        let rtin = preprocess_heightmap(&heightmap).unwrap();
         assert_eq!(
-            errors,
+            rtin.errors,
             vec![
-                862.25, 762.875, 862.25, 641.0, 771.125, 644.25, 747.0, 624.0, 616.5, 737.5,
+                0.0, 862.25, 762.875, 862.25, 641.0, 771.125, 644.25, 747.0, 624.0, 616.5, 737.5,
                 678.75, 616.5, 746.0, 746.0, 624.0, 747.0, 490.0, 624.0, 338.0, 688.5, 737.5,
                 338.0, 510.0, 485.75, 688.5, 483.5, 746.0, 453.5, 269.5, 746.0, 220.5, 265.5,
                 566.0, 199.0, 289.5, 283.5, 275.5, 275.0, 404.5, 404.5, 795.5, 795.5, 317.0, 373.0,
@@ -559,8 +571,19 @@ mod test {
                 228.0, 404.5, 795.5, 36.0, 386.0, 795.5, 317.0, 290.0, 373.0, 317.0, 253.0, 228.0,
                 82.0, 253.0, 649.5, 623.0, 197.0, 649.5, 221.0, 118.0, 470.5, 221.0, 673.0, 63.5,
                 255.5, 673.0, 333.5, 197.0, 623.0, 333.5, 188.5, 238.0, 153.0, 188.5, 340.5, 218.0,
-                178.0, 340.5, 195.0, 327.5, 46.0, 195.0, 134.5, 153.0, 238.0, 134.5, 0.0
+                178.0, 340.5, 195.0, 327.5, 46.0, 195.0, 134.5, 153.0, 238.0, 134.5,
             ]
         );
+    }
+
+    #[test]
+    fn preprocess_grand_canyon_test() {
+        let img: Heightmap = Reader::open("assets/grand_canyon_small_heightmap.png")
+            .unwrap()
+            .decode()
+            .unwrap()
+            .into_luma16();
+
+        let rtin = preprocess_heightmap(&img).unwrap();
     }
 }

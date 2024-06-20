@@ -9,14 +9,19 @@ anyhow = "1.0.86"
 bevy = "0.13.2"
 bevy-inspector-egui = "0.24.0"
 bevy_third_person_camera = "0.1.10"
-binary-tree = "0.2.0"
+ciborium = "0.2.2"
 clap = { version = "4.5.7", features = ["derive"] }
 image = "0.25.1"
 nalgebra = "0.32.6"
+serde = { version = "^1.0", optional = true,  features = ["derive"] }
+
+[features]
+serde = ["dep:serde"]
 
 [[bin]]
 name = "rtin"
 path = "src/bin/rtin.rs"
+enable-features = ["serde"]
 
 
 [[bin]]
