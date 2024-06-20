@@ -1,10 +1,14 @@
 use anyhow::{anyhow, Result};
 use image::{io::Reader, ImageBuffer, Luma};
+use log::{info, warn};
 use nalgebra::Vector2;
 use std::path::Path;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "serde")]
+use ciborium;
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 struct Label(u32);
@@ -34,7 +38,56 @@ pub struct Vertices;
 
 pub fn preprocess_heightmap_from_img_path<P: AsRef<Path>>(path: P) -> Result<RtinData> {
     let img: Heightmap = Reader::open(path.as_ref())?.decode()?.into_luma16();
-    preprocess_heightmap_from_img(&img)
+
+    if cfg!(feature = "serde") {
+        // Check if there is a .rtin file next to the image. If so, deserialize and use it.
+        let mut rtin_path = path.as_ref().to_path_buf();
+        rtin_path.set_extension("rtin");
+        use std::fs::OpenOptions;
+        let mut options = OpenOptions::new();
+        options.create(false).read(true).write(false);
+
+        if let Ok(file) = options.open(rtin_path) {
+            let reader = std::io::BufReader::new(file);
+            if let Ok(rtin) = ciborium::from_reader(reader) {
+                info!("Restored rtin preprocessed data from disc.");
+                return Ok(rtin);
+            } else {
+                info!("Unable to restore rtin data from disc: data corrupt? Older version? Will recompute and clobber.");
+            }
+        } else {
+            info!("Looked for serialized rtin data, but either it wasn't there or we couldn't read it.")
+        }
+    }
+
+    let rtin = preprocess_heightmap_from_img(&img)?;
+
+    if cfg!(feature = "serde") {
+        use std::fs::File;
+        // Check if there is a .rtin file next to the image. If so, deserialize and use it.
+        let mut rtin_path = path.as_ref().to_path_buf();
+        rtin_path.set_extension("rtin");
+
+        match File::create(rtin_path) {
+            Ok(file) => {
+                let writer = std::io::BufWriter::new(file);
+
+                match ciborium::into_writer(&rtin, writer) {
+                    Ok(_) => {
+                        info!("Wrote rtin data disc.");
+                    }
+                    Err(e) => {
+                        info!("{e}")
+                    }
+                }
+            }
+            Err(e) => {
+                warn!("{e}");
+            }
+        }
+    }
+
+    Ok(rtin)
 }
 
 pub fn preprocess_heightmap_from_img_bytes(img_buffer: &[u8]) -> Result<RtinData> {
