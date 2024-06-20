@@ -1,0 +1,24 @@
+[package]
+name = "mipo"
+version = "0.1.0"
+edition = "2021"
+default-run = "main"
+
+[dependencies]
+anyhow = "1.0.86"
+bevy = "0.13.2"
+bevy-inspector-egui = "0.24.0"
+bevy_third_person_camera = "0.1.10"
+binary-tree = "0.2.0"
+clap = { version = "4.5.7", features = ["derive"] }
+image = "0.25.1"
+nalgebra = "0.32.6"
+
+[[bin]]
+name = "rtin"
+path = "src/bin/rtin.rs"
+
+
+[[bin]]
+name = "main"
+path = "src/main.rs"

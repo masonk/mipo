@@ -1,0 +1,1 @@
+heightmaps from https://manticorp.github.io/unrealheightmap/index.html#latitude/36.2679/longitude/-112.3535/zoom/6/outputzoom/11/width/253/height/253
