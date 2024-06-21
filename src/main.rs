@@ -1,7 +1,9 @@
 #![feature(f16)]
+#![feature(trait_alias)]
 use bevy::prelude::*;
 
 mod camera;
+mod geometry;
 mod player;
 mod rtin;
 mod world;
