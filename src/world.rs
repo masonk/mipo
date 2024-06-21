@@ -9,7 +9,11 @@ impl Plugin for WorldPlugin {
     }
 }
 
-fn spawn_floor(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
+fn spawn_floor(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
     let shaded = bevy_rtin::load_mesh(
         "assets/grand_canyon_small_heightmap.png",
         MeshOptions::default(),
@@ -20,45 +24,66 @@ fn spawn_floor(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
         "assets/grand_canyon_small_heightmap.png",
         MeshOptions {
             wireframe: true,
-            error_threshold: 0.1,
+            error_threshold: 0.5,
         },
     )
     .unwrap();
     let shaded_handle = meshes.add(shaded);
     let wireframe_handle = meshes.add(wireframe);
+    let mat = StandardMaterial {
+        cull_mode: None,
+        unlit: false,
+        metallic: 0.,
+        perceptual_roughness: 0.5,
+        base_color: Color::WHITE,
+        ..default()
+    };
+    let white_material = materials.add(mat);
 
-    // commands.spawn((
-    //     PbrBundle {
-    //         mesh: shaded_handle,
-    //         transform: Transform::from_scale(Vec3::new(1., 150.0, 1.0)),
-    //         ..default()
-    //     },
-    //     Name::new("shaded_floor"),
-    // ));
     commands.spawn((
         PbrBundle {
-            mesh: wireframe_handle,
+            mesh: shaded_handle,
+            material: white_material.clone(),
             transform: Transform::from_scale(Vec3::new(1., 50.0, 1.0)),
             ..default()
         },
-        Name::new("wireframe_floor"),
+        Name::new("shaded_floor"),
     ));
+    // commands.spawn((
+    //     PbrBundle {
+    //         mesh: wireframe_handle,
+    //         material: white_material,
+    //         transform: Transform::from_scale(Vec3::new(1., 50.0, 1.0)),
+    //         ..default()
+    //     },
+    //     Name::new("wireframe_floor"),
+    // ));
 }
 fn spawn_light(mut commands: Commands) {
-    let light = (
-        PointLightBundle {
-            point_light: PointLight {
-                color: Color::rgba(0.835, 0.171, 0.171, 1.000),
-                intensity: 100000.0,
-                range: 29.0,
-                ..default()
-            },
-            transform: Transform::from_xyz(0.0, 5.0, 0.0),
-            ..default()
-        },
-        Name::new("world_light"),
-    );
-    commands.spawn(light);
+    let grid_size = 250.;
+    let light_grid_size = 10;
+    let interval = grid_size / light_grid_size as f32;
+
+    for x in 0..light_grid_size {
+        for z in 0..light_grid_size {
+            let transform = Transform::from_xyz(x as f32 * interval, 150., z as f32 * interval);
+            commands.spawn((
+                PointLightBundle {
+                    point_light: PointLight {
+                        color: Color::rgba(1.0, 1.0, 1.0, 1.000),
+                        intensity: 2e8,
+                        range: 500.,
+                        radius: 25.,
+                        shadows_enabled: true,
+                        ..default()
+                    },
+                    transform,
+                    ..default()
+                },
+                Name::new(format!("world_light_{x}_{z}")),
+            ));
+        }
+    }
 }
 
 fn spawn_objects(

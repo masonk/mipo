@@ -50,9 +50,10 @@ pub fn make_mesh(mesh_data: &MeshData, options: &MeshOptions) -> Mesh {
     for vertex in &mesh_data.vertices {
         vertices.push([vertex.x, vertex.z, vertex.y]);
 
-        let color = g.at(vertex[2] as f64).to_array().map(|f| f as f32);
-
-        colors.push(color);
+        let (r, g, b, a) = g.at(vertex[2] as f64).to_linear_rgba();
+        colors.push([r as f32, g as f32, b as f32, a as f32]);
+        // let color = g.at(vertex[2] as f64).to_array().map(|f| f as f32);
+        // colors.push(color);
     }
     let triangle_number = mesh_data.indices.len() / 3;
     if options.wireframe {
@@ -78,6 +79,27 @@ pub fn make_mesh(mesh_data: &MeshData, options: &MeshOptions) -> Mesh {
         VertexAttributeValues::Float32x4(colors),
     );
     mesh.insert_indices(Indices::U32(indices));
+
+    if !options.wireframe {
+        let mut normals: Vec<[f32; 3]> = Vec::new();
+        for i in 0..triangle_number {
+            let a_i = mesh_data.indices[i * 3];
+            let b_i = mesh_data.indices[i * 3 + 1];
+            let c_i = mesh_data.indices[i * 3 + 2];
+
+            let a = mesh_data.vertices[a_i as usize];
+            let b = mesh_data.vertices[b_i as usize];
+            let c = mesh_data.vertices[c_i as usize];
+
+            let ac = c - a;
+            normals.push((b - a).cross(&ac).normalize().into());
+        }
+
+        mesh.insert_attribute(
+            Mesh::ATTRIBUTE_NORMAL,
+            VertexAttributeValues::Float32x3(normals),
+        );
+    }
 
     mesh
 }

@@ -15,7 +15,8 @@ impl Plugin for CameraPlugin {
 fn spawn_camera(mut commands: Commands) {
     let camera = (
         Camera3dBundle {
-            transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
+            transform: Transform::from_xyz(-154.44, 204.027, -111.268)
+                .looking_at(Vec3::new(150., 20.0, 150.0), Vec3::Y),
             ..default()
         },
         ThirdPersonCamera {
@@ -25,8 +26,8 @@ fn spawn_camera(mut commands: Commands) {
             offset_enabled: true,
             offset_toggle_enabled: true,
             gamepad_settings: CameraGamepadSettings { ..default() },
-            zoom_enabled: true,           // default
-            zoom: Zoom::new(1.5, 20000.), // default
+            zoom_enabled: true,          // default
+            zoom: Zoom::new(1.5, 1000.), // default
             ..default()
         },
     );

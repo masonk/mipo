@@ -29,7 +29,7 @@ fn spawn_player(
                 inner_angle: 0.4,
                 ..default()
             },
-            transform: Transform::from_xyz(0.0, 0.2, -0.2),
+            transform: Transform::from_xyz(0., 0.5, 0.),
             ..default()
         },
         Name::new("flashlight"),
@@ -39,7 +39,7 @@ fn spawn_player(
         Name::new("player"),
         SceneBundle {
             scene: assets.load("Player.gltf#Scene0"),
-            transform: Transform::from_xyz(0., 0.5, 0.),
+            transform: Transform::from_xyz(128.159, 0.5, 152.334),
             ..default()
         },
         Player,
