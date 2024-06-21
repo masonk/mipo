@@ -25,8 +25,8 @@ fn spawn_camera(mut commands: Commands) {
             offset_enabled: true,
             offset_toggle_enabled: true,
             gamepad_settings: CameraGamepadSettings { ..default() },
-            zoom_enabled: true,        // default
-            zoom: Zoom::new(1.5, 20.), // default
+            zoom_enabled: true,           // default
+            zoom: Zoom::new(1.5, 20000.), // default
             ..default()
         },
     );

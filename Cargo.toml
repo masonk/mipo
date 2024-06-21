@@ -8,16 +8,20 @@ default-run = "main"
 anyhow = "1.0.86"
 bevy = "0.13.2"
 bevy-inspector-egui = "0.24.0"
+bevy_log = "0.13.2"
 bevy_third_person_camera = "0.1.10"
 ciborium = { version = "^0.2.2", optional = true }
 clap = { version = "4.5.7", features = ["derive"] }
+colorgrad = "0.6.2"
 env_logger = "0.11.3"
 image = "0.25.1"
 log = "0.4.21"
 nalgebra = { version = "0.32.6" }
+num-traits = "0.2.19"
 serde = { version = "^1.0", optional = true,  features = ["derive"] }
 
 [features]
+default = ["serde"]
 serde = ["dep:serde", "dep:ciborium", "nalgebra/serde-serialize"]
 
 [[bin]]

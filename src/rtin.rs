@@ -1,9 +1,10 @@
-use crate::geometry::Triangle;
+use crate::geometry::{vec2, vec3, Triangle, Vector2, Vector3};
+
 use anyhow::{anyhow, Result};
 use image::{io::Reader, ImageBuffer, Luma};
 #[allow(unused_imports)]
 use log::{info, warn};
-use nalgebra::{Vector2, Vector3};
+
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -20,22 +21,24 @@ type Coords = Vector2<u32>;
 
 #[derive(Debug, Default, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-struct RtinTriangle {
-    error: f32,
-    vertices: Triangle<Vector3<f32>>, // CCW ordering, last vertice is the right angle
+pub struct RtinTriangle {
+    pub error: f32,
+    pub vertices: Triangle<Vector3<f32>>, // CCW ordering, last vertice is the right angle
 }
 
 // All the data that can be processed offline for a heightmap. Includes an error map
 // of the rtin hierarchy.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct RtinData {
-    grid_size: u32,
-    triangles: Vec<RtinTriangle>,
+    pub(crate) min_height: u16,
+    pub(crate) max_height: u16,
+    pub(crate) grid_size: u32,
+    pub(crate) triangles: Vec<RtinTriangle>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct MeshData {
-    pub vertices: Vec<Vector3<f32>>,
+    pub vertices: Vec<Vector3<f32>>, // domain [0, 1]
     pub indices: Vec<u32>,
 }
 
@@ -191,6 +194,8 @@ pub fn preprocess_heightmap(heightmap: &Heightmap) -> Result<RtinData> {
         return Err(anyhow!("rtin only works when the dimensions of the heightmap are 2^k + 1 x 2^k + 1 for some integer k. Got: {} x {}", x, y));
     }
 
+    let mut min_height: u16 = 0;
+    let mut max_height: u16 = 0;
     let num_triangles = num_triangles(x);
     let mut errors: Vec<f32> = Vec::with_capacity(num_triangles as usize);
     let mut triangles: Vec<RtinTriangle> = Vec::with_capacity(num_triangles as usize);
@@ -211,7 +216,7 @@ pub fn preprocess_heightmap(heightmap: &Heightmap) -> Result<RtinData> {
 
        For our purposes, a point is 'covered' by the triangle if it is inside the triangle's projection
        onto the xy plane. The height of the triangle at a point p is the  interpolation of the
-       height of the triangle's three vertices at that point (via barymetric coordinates).
+       height of the triangle's three vertices at that point (via barycentric coordinates).
 
     */
     for i in 0..num_triangles {
@@ -261,7 +266,7 @@ pub fn preprocess_heightmap(heightmap: &Heightmap) -> Result<RtinData> {
             let d21 = v2.dot(&v1);
 
             let j = (d11 * d20 - d01 * d21) as f32 * inverse_denom;
-            // Any point with a negative barymetric coordinate lies outside
+            // Any point with a negative barycentric coordinate lies outside
             // of the triangle.
             if j < 0.0 {
                 continue;
@@ -282,6 +287,11 @@ pub fn preprocess_heightmap(heightmap: &Heightmap) -> Result<RtinData> {
             max = error.max(max);
         }
 
+        for p in heightmap.pixels() {
+            min_height = p[0].min(min_height);
+            max_height = p[0].max(max_height);
+        }
+
         errors.push(max);
         let triangle = RtinTriangle {
             error: max,
@@ -296,37 +306,12 @@ pub fn preprocess_heightmap(heightmap: &Heightmap) -> Result<RtinData> {
 
     Ok(RtinData {
         grid_size: x,
-        // errors,
+        min_height,
+        max_height,
         triangles,
     })
 }
 
-#[allow(dead_code)]
-fn barycentric_coordinates(
-    p: Vector2<i32>,
-    Triangle {
-        ref a,
-        ref b,
-        ref c,
-    }: &Triangle<Vector2<i32>>,
-) -> (f32, f32, f32) {
-    // https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
-    let v0 = b - a;
-    let v1 = c - a;
-    let v2 = p - a;
-    let d00 = v0.dot(&v0);
-    let d01 = v0.dot(&v1);
-    let d11 = v1.dot(&v1);
-    let d20 = v2.dot(&v0);
-    let d21 = v2.dot(&v1);
-    let inverse_denom = 1.0 / ((d00 * d11) - (d01 * d01)) as f32;
-
-    let j = (d11 * d20 - d01 * d21) as f32 * inverse_denom;
-    let k = (d00 * d21 - d01 * d20) as f32 * inverse_denom;
-    let i = 1.0f32 - j - k;
-
-    (i, j, k)
-}
 fn points_in_bounding_box(Triangle { a, b, c }: Triangle<Vector2<f32>>) -> Vec<Vector2<f32>> {
     let mut points = vec![];
 
@@ -386,14 +371,6 @@ pub fn child_indexes(i: u32) -> (u32, u32) {
     let base = p << 1;
 
     (label_to_idx(Label(base)), label_to_idx(Label(base + 1)))
-}
-
-fn vec2<T>(a: T, b: T) -> Vector2<T> {
-    Vector2::new(a, b)
-}
-
-fn vec3<T>(a: T, b: T, c: T) -> Vector3<T> {
-    Vector3::new(a, b, c)
 }
 
 #[derive(Eq, PartialEq, Debug)]
@@ -503,6 +480,7 @@ fn steps(Label(mut id): Label) -> Vec<Step> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::geometry::{vec2, vec3};
 
     #[test]
     fn test_idx_depth() {
@@ -629,16 +607,6 @@ mod test {
     //         "(0, 21) is outside"
     //     );
     // }
-
-    #[test]
-    fn barycentric_coordinates_test() {
-        let t: Triangle<Vector2<i32>> = Triangle::new(vec2(0, 0), vec2(2, 0), vec2(2, 2));
-        assert_eq!(barycentric_coordinates(vec2(0, 0), &t), (1., 0., 0.));
-        assert_eq!(barycentric_coordinates(vec2(2, 0), &t), (0., 1., 0.));
-        assert_eq!(barycentric_coordinates(vec2(2, 2), &t), (0., 0., 1.));
-        assert_eq!(barycentric_coordinates(vec2(1, 1), &t), (0.5, 0.0, 0.5));
-        assert_eq!(barycentric_coordinates(vec2(1, 0), &t), (0.5, 0.5, 0.0));
-    }
 
     #[test]
     fn thresholded_mesh_data_test() {
@@ -772,7 +740,7 @@ mod test {
     }
 
     #[test]
-    fn thresholded_triangles_test() {
+    fn thresholded_triangles_grand_canyon_test() {
         let rtin_data =
             preprocess_heightmap_from_img_path("assets/grand_canyon_small_heightmap.png").unwrap();
 
@@ -800,53 +768,3 @@ mod test {
         );
     }
 }
-
-// fn lattice_points_in_triangle((a, b, c): Triangle<i32>) -> Vec<Vector2<i32>> {
-//     let mut points = vec![];
-
-//     let bottom_left = vec2(a[0].min(b[0]).min(c[0]), a[1].min(b[1]).min(c[1]));
-//     let top_right = vec2(a[0].max(b[0]).max(c[0]), a[1].max(b[1]).max(c[1]));
-
-//     for i in bottom_left[0]..=top_right[0] {
-//         for j in bottom_left[1]..=top_right[1] {
-//             let p = vec2(i, j);
-//             if point_in_triangle(p, (a, b, c)) {
-//                 points.push(p);
-//             }
-//         }
-//     }
-//     points
-// }
-
-// fn point_in_triangle(
-//     p: Vector2<i32>,
-//     (a, b, c): (Vector2<i32>, Vector2<i32>, Vector2<i32>),
-// ) -> bool {
-//     // A point is in or on the edge of a triangle abc if it is to the same side of the each of the
-//     // lines ab, bc, and ca. We find out which side the point is on by taking the "2d cross product"
-//     // of ab x ap, bc x bp, and ca x cp respectively. We do this by noticing that adding a 0 third dimension
-//     // gives us one term nonzero component to check.
-//     // (x1, y1, 0) x (x2, y2, 0) = (0, 0, x1y2 - x2y1)
-//     let ab = b - a;
-//     let ap = p - a;
-//     let sign_1 = ((ab[0] * ap[1]) - (ab[1] * ap[0])).signum();
-
-//     let bc = c - b;
-//     let bp = p - b;
-//     let sign_2 = ((bc[0] * bp[1]) - (bc[1] * bp[0])).signum();
-//     if sign_1 != 0 && sign_2 != 0 && sign_1 != sign_2 {
-//         return false;
-//     }
-
-//     let ca = a - c;
-//     let cp = p - c;
-//     let sign_3 = ((ca[0] * cp[1]) - (ca[1] * cp[0])).signum();
-
-//     if sign_1 != 0 && sign_3 != 0 && sign_1 != sign_3 {
-//         return false;
-//     }
-//     if sign_2 != 0 && sign_3 != 0 && sign_2 != sign_3 {
-//         return false;
-//     }
-//     return true;
-// }

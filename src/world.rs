@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+use crate::{bevy_rtin, bevy_rtin::MeshOptions};
 pub struct WorldPlugin;
 
 impl Plugin for WorldPlugin {
@@ -8,21 +9,40 @@ impl Plugin for WorldPlugin {
     }
 }
 
-fn spawn_floor(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-    let floor = (
+fn spawn_floor(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
+    let shaded = bevy_rtin::load_mesh(
+        "assets/grand_canyon_small_heightmap.png",
+        MeshOptions::default(),
+    )
+    .unwrap();
+
+    let wireframe = bevy_rtin::load_mesh(
+        "assets/grand_canyon_small_heightmap.png",
+        MeshOptions {
+            wireframe: true,
+            error_threshold: 0.1,
+        },
+    )
+    .unwrap();
+    let shaded_handle = meshes.add(shaded);
+    let wireframe_handle = meshes.add(wireframe);
+
+    // commands.spawn((
+    //     PbrBundle {
+    //         mesh: shaded_handle,
+    //         transform: Transform::from_scale(Vec3::new(1., 150.0, 1.0)),
+    //         ..default()
+    //     },
+    //     Name::new("shaded_floor"),
+    // ));
+    commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Plane3d::default().mesh().size(15., 15.)),
-            material: materials.add(Color::DARK_GREEN),
+            mesh: wireframe_handle,
+            transform: Transform::from_scale(Vec3::new(1., 50.0, 1.0)),
             ..default()
         },
-        Name::new("floor"),
-    );
-
-    commands.spawn(floor);
+        Name::new("wireframe_floor"),
+    ));
 }
 fn spawn_light(mut commands: Commands) {
     let light = (
