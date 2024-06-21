@@ -24,7 +24,6 @@ serde = ["dep:serde", "dep:ciborium", "nalgebra/serde-serialize"]
 name = "rtin"
 path = "src/bin/rtin.rs"
 
-
 [[bin]]
 name = "main"
 path = "src/main.rs"

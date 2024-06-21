@@ -1,19 +1,15 @@
-pub trait Point = std::fmt::Debug + Default + PartialEq + Clone;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Copy, Clone, PartialEq, Default)]
-pub struct Triangle<T>
-where
-    T: Point,
-{
+#[derive(Debug, Clone, PartialEq, Default)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct Triangle<T> {
     pub a: T,
     pub b: T,
     pub c: T,
 }
 
-impl<T> Triangle<T>
-where
-    T: Point,
-{
+impl<T> Triangle<T> {
     pub fn new(a: T, b: T, c: T) -> Triangle<T> {
         Triangle { a, b, c }
     }
@@ -31,18 +27,12 @@ where
     }
 }
 
-pub struct TriangleIterator<'a, T>
-where
-    T: Point,
-{
+pub struct TriangleIterator<'a, T> {
     t: &'a Triangle<T>,
     pos: u32,
 }
 
-impl<'a, T> Iterator for TriangleIterator<'a, T>
-where
-    T: Point,
-{
+impl<'a, T> Iterator for TriangleIterator<'a, T> {
     type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -56,10 +46,7 @@ where
         Some(ret)
     }
 }
-impl<'a, T> IntoIterator for &'a Triangle<T>
-where
-    T: Point,
-{
+impl<'a, T> IntoIterator for &'a Triangle<T> {
     type Item = &'a T;
     type IntoIter = TriangleIterator<'a, T>;
 

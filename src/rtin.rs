@@ -18,7 +18,8 @@ struct Label(u32);
 type Heightmap = ImageBuffer<Luma<u16>, Vec<u16>>;
 type Coords = Vector2<u32>;
 
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Default, Clone)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 struct RtinTriangle {
     error: f32,
     vertices: Triangle<Vector3<f32>>, // CCW ordering, last vertice is the right angle
@@ -36,17 +37,6 @@ pub struct RtinData {
 pub struct MeshData {
     pub vertices: Vec<Vector3<f32>>,
     pub indices: Vec<u32>,
-}
-
-pub struct Options {
-    _error_threshold: f32,
-}
-impl Default for Options {
-    fn default() -> Options {
-        Options {
-            _error_threshold: 0.0,
-        }
-    }
 }
 
 pub fn threshold_triangle(
@@ -92,8 +82,8 @@ pub fn thresholded_mesh_data(error_threshold: f32, rtin_data: &RtinData) -> Mesh
     let mut vertice_lookup = HashMap::<u32, usize>::new();
 
     for idx in triangle_indices {
-        let t: RtinTriangle = rtin_data.triangles[idx as usize];
-        for v in (&t.vertices).into_iter() {
+        let t = &rtin_data.triangles[idx as usize];
+        for v in t.vertices.into_iter() {
             let v_id = v[1] as u32 * rtin_data.grid_size + v[0] as u32;
 
             let v_idx = if vertice_lookup.contains_key(&v_id) {
