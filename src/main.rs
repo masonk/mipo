@@ -22,7 +22,6 @@ mod world;
 
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_log;
-use bevy_third_person_camera::ThirdPersonCameraPlugin;
 use env_logger;
 use smooth_bevy_cameras::{controllers::unreal::UnrealCameraPlugin, LookTransformPlugin};
 

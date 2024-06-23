@@ -4,7 +4,6 @@ use bevy::{
 };
 use bevy_rapier3d::control::KinematicCharacterController;
 use bevy_rapier3d::prelude::*;
-use bevy_third_person_camera::{controller::ThirdPersonController, ThirdPersonCameraTarget};
 
 const MOUSE_SENSITIVITY: f32 = 0.3;
 const GROUND_TIMER: f32 = 0.5;
@@ -58,7 +57,7 @@ fn spawn_player(
             ..default()
         },
         RigidBody::KinematicPositionBased,
-        Collider::cuboid(0.5, 1.0, 0.5),
+        Collider::cuboid(0.3, 1.0, 0.3),
         KinematicCharacterController {
             custom_mass: Some(5.0),
             up: Vec3::Y,
@@ -89,7 +88,7 @@ fn spawn_player(
     );
 
     commands.spawn(player).with_children(|parent| {
-        // parent.spawn(flashlight);
+        parent.spawn(flashlight);
     });
 }
 /// Keyboard input vector

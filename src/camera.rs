@@ -1,8 +1,4 @@
 use bevy::prelude::*;
-use bevy_third_person_camera::{
-    camera::{CameraGamepadSettings, Zoom},
-    ThirdPersonCamera,
-};
 
 use smooth_bevy_cameras::controllers::unreal::{UnrealCameraBundle, UnrealCameraController};
 

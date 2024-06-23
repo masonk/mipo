@@ -3,7 +3,7 @@ use bevy::{pbr::wireframe::Wireframe, prelude::*};
 use crate::{bevy_rtin, bevy_rtin::MeshOptions};
 use bevy_rapier3d::math::Vect;
 use bevy_rapier3d::prelude::*;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 pub struct WorldPlugin {
     pub(crate) terrain_path: PathBuf,
