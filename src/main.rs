@@ -20,9 +20,8 @@ mod player;
 mod rtin;
 mod world;
 
+use bevy::log::LogPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
-use bevy_log;
-use env_logger;
 use smooth_bevy_cameras::{controllers::unreal::UnrealCameraPlugin, LookTransformPlugin};
 
 use camera::CameraPlugin;
@@ -32,12 +31,15 @@ use world::WorldPlugin;
 // cargo run assets/grand_canyon_small_heightmap.png
 // cargo run assets/36_377_-112_445_11_8129_8129.png
 fn main() {
-    env_logger::init();
     let args = Args::parse();
 
     App::new()
         .add_plugins((
-            DefaultPlugins.build().disable::<bevy_log::LogPlugin>(),
+            DefaultPlugins.set(LogPlugin {
+                filter: "info,wgpu_core=warn,wgpu_hal=warn,main=debug".into(),
+                level: bevy::log::Level::DEBUG,
+                ..default()
+            }),
             RapierPhysicsPlugin::<NoUserData>::default(),
             RapierDebugRenderPlugin::default(),
             PlayerPlugin,
