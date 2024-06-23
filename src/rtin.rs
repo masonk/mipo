@@ -3,7 +3,7 @@ use crate::geometry::{vec2, vec3, Triangle, Vector2, Vector3};
 use anyhow::{anyhow, Result};
 use image::{io::Reader, ImageBuffer, Luma};
 #[allow(unused_imports)]
-use log::{info, warn};
+use log::{debug, info, warn};
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -105,59 +105,71 @@ pub fn thresholded_mesh_data(error_threshold: f32, rtin_data: &RtinData) -> Mesh
 }
 
 pub fn preprocess_heightmap_from_img_path<P: AsRef<Path>>(path: P) -> Result<RtinData> {
-    let img: Heightmap = Reader::open(path.as_ref())?.decode()?.into_luma16();
+    match Reader::open(path.as_ref())?.decode() {
+        Ok(img) => {
+            #[cfg(feature = "serde")]
+            {
+                // Check if there is a .rtin file next to the image. If so, deserialize and use it.
+                let mut rtin_path = path.as_ref().to_path_buf();
+                rtin_path.set_extension("rtin");
+                use std::fs::OpenOptions;
+                let mut options = OpenOptions::new();
+                options.create(false).read(true).write(false);
 
-    #[cfg(feature = "serde")]
-    {
-        // Check if there is a .rtin file next to the image. If so, deserialize and use it.
-        let mut rtin_path = path.as_ref().to_path_buf();
-        rtin_path.set_extension("rtin");
-        use std::fs::OpenOptions;
-        let mut options = OpenOptions::new();
-        options.create(false).read(true).write(false);
-
-        if let Ok(file) = options.open(rtin_path) {
-            let reader = std::io::BufReader::new(file);
-            if let Ok(rtin) = ciborium::from_reader(reader) {
-                info!("Restored rtin preprocessed data from disc.");
-                return Ok(rtin);
-            } else {
-                info!("Unable to restore rtin data from disc: data corrupt? Older version? Will recompute and clobber.");
+                if let Ok(file) = options.open(rtin_path) {
+                    let reader = std::io::BufReader::new(file);
+                    if let Ok(rtin) = ciborium::from_reader(reader) {
+                        info!("Restored rtin preprocessed data from disc.");
+                        return Ok(rtin);
+                    } else {
+                        info!("Unable to restore rtin data from disc: data corrupt? Older version? Will recompute and clobber.");
+                    }
+                } else {
+                    info!("Looked for serialized rtin data, but either it wasn't there or we couldn't read it.")
+                }
             }
-        } else {
-            info!("Looked for serialized rtin data, but either it wasn't there or we couldn't read it.")
-        }
-    }
 
-    let rtin = preprocess_heightmap_from_img(&img)?;
+            let rtin = preprocess_heightmap_from_img(&img.into_luma16())?;
 
-    #[cfg(feature = "serde")]
-    {
-        use std::fs::File;
-        // Check if there is a .rtin file next to the image. If so, deserialize and use it.
-        let mut rtin_path = path.as_ref().to_path_buf();
-        rtin_path.set_extension("rtin");
+            #[cfg(feature = "serde")]
+            {
+                use std::fs::File;
+                // Check if there is a .rtin file next to the image. If so, deserialize and use it.
+                let mut rtin_path = path.as_ref().to_path_buf();
+                rtin_path.set_extension("rtin");
 
-        match File::create(rtin_path) {
-            Ok(file) => {
-                let writer = std::io::BufWriter::new(file);
+                match File::create(rtin_path) {
+                    Ok(file) => {
+                        let writer = std::io::BufWriter::new(file);
 
-                match ciborium::into_writer(&rtin, writer) {
-                    Ok(_) => {
-                        info!("Wrote rtin data disc.");
+                        match ciborium::into_writer(&rtin, writer) {
+                            Ok(_) => {
+                                info!("Wrote rtin data disc.");
+                            }
+                            Err(e) => {
+                                info!("{e}")
+                            }
+                        }
                     }
                     Err(e) => {
-                        info!("{e}")
+                        warn!("{e}");
                     }
                 }
             }
-            Err(e) => {
-                warn!("{e}");
-            }
+
+            Ok(rtin)
+        }
+        Err(e) => {
+            Err(anyhow!(e))
+            // debug!("Failed to load img with img crate: {e}. Attempting to load as a GeoTIFF from the tiff crate.");
+            // use std::fs::File;
+            // use tiff;
+            // let file = File::open(path.as_ref())?;
+            // let reader = std::io::BufReader(file);
+            // let decoder = tiff::decoder::Decoder::new(reader)?;
+            // let img = decoder.next_image()?;
         }
     }
-
-    Ok(rtin)
 }
 
 pub fn preprocess_heightmap_from_img(img: &Heightmap) -> Result<RtinData> {

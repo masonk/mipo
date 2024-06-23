@@ -1,63 +1,83 @@
-use bevy::prelude::*;
+use bevy::{pbr::wireframe::Wireframe, prelude::*};
 
 use crate::{bevy_rtin, bevy_rtin::MeshOptions};
-pub struct WorldPlugin;
+use bevy_rapier3d::math::Vect;
+use bevy_rapier3d::prelude::*;
+use std::path::{Path, PathBuf};
+
+pub struct WorldPlugin {
+    pub(crate) terrain_path: PathBuf,
+}
 
 impl Plugin for WorldPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (spawn_floor, spawn_light, spawn_objects));
+        app.add_systems(
+            Startup,
+            (
+                make_spawn_floor(self.terrain_path.clone()),
+                spawn_light,
+                spawn_objects,
+            ),
+        );
     }
 }
 
-fn spawn_floor(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-    let shaded = bevy_rtin::load_mesh(
-        "assets/grand_canyon_small_heightmap.png",
-        MeshOptions::default(),
-    )
-    .unwrap();
+fn make_spawn_floor(
+    terrain_path: PathBuf,
+) -> impl FnMut(Commands, ResMut<Assets<Mesh>>, ResMut<Assets<StandardMaterial>>) {
+    move |mut commands, mut meshes, mut materials| {
+        let (shaded, shaded_mesh_data) =
+            bevy_rtin::load_mesh(&terrain_path, MeshOptions::default()).unwrap();
 
-    let wireframe = bevy_rtin::load_mesh(
-        "assets/grand_canyon_small_heightmap.png",
-        MeshOptions {
-            wireframe: true,
-            error_threshold: 0.5,
-        },
-    )
-    .unwrap();
-    let shaded_handle = meshes.add(shaded);
-    let wireframe_handle = meshes.add(wireframe);
-    let mat = StandardMaterial {
-        cull_mode: None,
-        unlit: false,
-        metallic: 0.,
-        perceptual_roughness: 0.5,
-        base_color: Color::WHITE,
-        ..default()
-    };
-    let white_material = materials.add(mat);
+        let parry3d_vertices: Vec<Vect> = shaded_mesh_data
+            .vertices
+            .into_iter()
+            .map(|v| Vect::new(v[0], v[2], v[1]))
+            .collect();
 
-    commands.spawn((
-        PbrBundle {
-            mesh: shaded_handle,
-            material: white_material.clone(),
-            transform: Transform::from_scale(Vec3::new(1., 50.0, 1.0)),
+        let parry3d_indices = shaded_mesh_data
+            .indices
+            .into_iter()
+            .array_chunks::<3>()
+            .collect();
+
+        let collider = Collider::trimesh(parry3d_vertices, parry3d_indices);
+
+        let shaded_handle = meshes.add(shaded);
+        let mat = StandardMaterial {
+            cull_mode: None,
+            unlit: false,
+            metallic: 0.,
+            perceptual_roughness: 0.5,
+            base_color: Color::WHITE,
             ..default()
-        },
-        Name::new("shaded_floor"),
-    ));
-    // commands.spawn((
-    //     PbrBundle {
-    //         mesh: wireframe_handle,
-    //         material: white_material,
-    //         transform: Transform::from_scale(Vec3::new(1., 50.0, 1.0)),
-    //         ..default()
-    //     },
-    //     Name::new("wireframe_floor"),
-    // ));
+        };
+        let white_material = materials.add(mat);
+
+        commands
+            .spawn((
+                PbrBundle {
+                    mesh: shaded_handle,
+                    material: white_material.clone(),
+                    transform: Transform::from_scale(Vec3::new(1., 50.0, 1.0)),
+                    ..default()
+                },
+                Wireframe,
+                RigidBody::Fixed,
+                Name::new("shaded_floor"),
+            ))
+            .with_children(|p| {
+                p.spawn((
+                    Name::new("terrain_collider"),
+                    collider,
+                    Wireframe,
+                    TransformBundle {
+                        local: Transform::from_scale(Vec3::new(1., 1.0, 1.0)),
+                        ..default()
+                    },
+                ));
+            });
+    }
 }
 fn spawn_light(mut commands: Commands) {
     let grid_size = 250.;

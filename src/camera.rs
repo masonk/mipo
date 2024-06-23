@@ -4,6 +4,8 @@ use bevy_third_person_camera::{
     ThirdPersonCamera,
 };
 
+use smooth_bevy_cameras::controllers::unreal::{UnrealCameraBundle, UnrealCameraController};
+
 pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
@@ -13,23 +15,15 @@ impl Plugin for CameraPlugin {
 }
 
 fn spawn_camera(mut commands: Commands) {
-    let camera = (
-        Camera3dBundle {
-            transform: Transform::from_xyz(-154.44, 204.027, -111.268)
-                .looking_at(Vec3::new(150., 20.0, 150.0), Vec3::Y),
-            ..default()
-        },
-        ThirdPersonCamera {
-            aim_enabled: true,
-            aim_speed: 3.0, // default
-            aim_zoom: 0.7,  // default
-            offset_enabled: true,
-            offset_toggle_enabled: true,
-            gamepad_settings: CameraGamepadSettings { ..default() },
-            zoom_enabled: true,          // default
-            zoom: Zoom::new(1.5, 1000.), // default
-            ..default()
-        },
-    );
-    commands.spawn(camera);
+    commands
+        .spawn(Camera3dBundle::default())
+        .insert(UnrealCameraBundle::new(
+            UnrealCameraController {
+                keyboard_mvmt_sensitivity: 100.0,
+                ..default()
+            },
+            Vec3::new(-154.44, 204.027, -111.268),
+            Vec3::new(150., 20.0, 150.0),
+            Vec3::Y,
+        ));
 }
