@@ -1,4 +1,7 @@
-use bevy::{pbr::wireframe::Wireframe, prelude::*};
+use bevy::{
+    pbr::wireframe::{Wireframe, WireframeConfig},
+    prelude::*,
+};
 
 use crate::{bevy_rtin, bevy_rtin::MeshOptions};
 use bevy_rapier3d::math::Vect;
@@ -19,9 +22,24 @@ impl Plugin for WorldPlugin {
                 spawn_objects,
             ),
         );
+        app.add_systems(Update, (wireframe_control));
     }
 }
-
+fn wireframe_control(
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    mut config: ResMut<WireframeConfig>,
+    mut rapier_wireframes: ResMut<DebugRenderContext>,
+) {
+    // Toggle showing a wireframe on all meshes
+    if keyboard_input.just_pressed(KeyCode::F4) {
+        info!(
+            "Toggling wireframes {}",
+            if config.global { "off" } else { "on" }
+        );
+        config.global = !config.global;
+        rapier_wireframes.enabled = !rapier_wireframes.enabled;
+    }
+}
 fn make_spawn_floor(
     terrain_path: PathBuf,
 ) -> impl FnMut(Commands, ResMut<Assets<Mesh>>, ResMut<Assets<StandardMaterial>>) {
@@ -62,7 +80,6 @@ fn make_spawn_floor(
                     transform: Transform::from_scale(Vec3::new(1., 50.0, 1.0)),
                     ..default()
                 },
-                Wireframe,
                 RigidBody::Fixed,
                 Name::new("shaded_floor"),
             ))
@@ -70,7 +87,6 @@ fn make_spawn_floor(
                 p.spawn((
                     Name::new("terrain_collider"),
                     collider,
-                    Wireframe,
                     TransformBundle {
                         local: Transform::from_scale(Vec3::new(1., 1.0, 1.0)),
                         ..default()

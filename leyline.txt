@@ -1,0 +1,10 @@
+Leyline is a cooperative first person action RPG. 
+
+In Leyline, you are an arcanist, and you are trying to straighten out leylines that have become disordered due to demonic activity.
+
+Leylines are the source of magic in the world. They can channel it into the world, or, if improperly arranged, out of the world.
+
+On each mission, you will solve a puzzle which realigned the leystones, allowing magicka to again flow properly.
+
+But beware - the demons don't want these leylines to be fixed. They're trying to stop you!
+

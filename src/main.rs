@@ -1,7 +1,10 @@
 #![feature(f16)]
 #![feature(trait_alias)]
 #![feature(iter_array_chunks)]
-use bevy::{pbr::wireframe::WireframePlugin, prelude::*};
+use bevy::{
+    pbr::wireframe::{WireframeConfig, WireframePlugin},
+    prelude::*,
+};
 use bevy_rapier3d::prelude::*;
 use clap::Parser;
 use std::path::PathBuf;
@@ -53,5 +56,14 @@ fn main() {
             // ThirdPersonCameraPlugin,
             WorldInspectorPlugin::new(),
         ))
+        .insert_resource(WireframeConfig {
+            // The global wireframe config enables drawing of wireframes on every mesh,
+            // except those with `NoWireframe`. Meshes with `Wireframe` will always have a wireframe,
+            // regardless of the global configuration.
+            global: true,
+            // Controls the default color of all wireframes. Used as the default color for global wireframes.
+            // Can be changed per mesh using the `WireframeColor` component.
+            ..default()
+        })
         .run();
 }
