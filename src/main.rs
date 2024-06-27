@@ -6,7 +6,6 @@ use bevy::{
     pbr::wireframe::{WireframeConfig, WireframePlugin},
     prelude::*,
 };
-// use bevy_rapier3d::prelude::*;
 use clap::Parser;
 use std::path::PathBuf;
 // // Preprocess an image for rtin meshing.

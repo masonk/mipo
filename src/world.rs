@@ -97,7 +97,7 @@ fn make_spawn_floor(
 }
 fn spawn_light(mut commands: Commands) {
     let grid_size = 250.;
-    let light_grid_size = 10;
+    let light_grid_size = 3;
     let interval = grid_size / light_grid_size as f32;
 
     for x in 0..light_grid_size {

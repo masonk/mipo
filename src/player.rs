@@ -205,6 +205,10 @@ fn spawn_player(
         b.spawn(flashlight);
         b.spawn((
             Camera3dBundle {
+                projection: Projection::Perspective(PerspectiveProjection {
+                    fov: 1.0,
+                    ..default()
+                }),
                 ..Default::default()
             },
             Name::new("FirstPersonCamera"),
