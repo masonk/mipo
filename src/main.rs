@@ -1,11 +1,12 @@
 #![feature(f16)]
 #![feature(trait_alias)]
 #![feature(iter_array_chunks)]
+#![feature(array_chunks)]
 use bevy::{
     pbr::wireframe::{WireframeConfig, WireframePlugin},
     prelude::*,
 };
-use bevy_rapier3d::prelude::*;
+// use bevy_rapier3d::prelude::*;
 use clap::Parser;
 use std::path::PathBuf;
 // // Preprocess an image for rtin meshing.
@@ -25,7 +26,8 @@ mod world;
 
 use bevy::log::LogPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
-use smooth_bevy_cameras::{controllers::unreal::UnrealCameraPlugin, LookTransformPlugin};
+use bevy_rapier3d::prelude::*;
+// use smooth_bevy_cameras::{controllers::unreal::UnrealCameraPlugin, LookTransformPlugin};
 
 use camera::CameraPlugin;
 use player::PlayerPlugin;
@@ -44,23 +46,23 @@ fn main() {
                 ..default()
             }),
             RapierPhysicsPlugin::<NoUserData>::default(),
-            RapierDebugRenderPlugin::default(),
+            RapierDebugRenderPlugin::default().disabled(),
             PlayerPlugin,
             CameraPlugin,
-            LookTransformPlugin,
-            UnrealCameraPlugin::default(),
+            // LookTransformPlugin,
+            // UnrealCameraPlugin::default(),
             WireframePlugin,
             WorldPlugin {
                 terrain_path: args.terrain,
             },
             // ThirdPersonCameraPlugin,
-            WorldInspectorPlugin::new(),
+            // WorldInspectorPlugin::new(),
         ))
         .insert_resource(WireframeConfig {
             // The global wireframe config enables drawing of wireframes on every mesh,
             // except those with `NoWireframe`. Meshes with `Wireframe` will always have a wireframe,
             // regardless of the global configuration.
-            global: true,
+            global: false,
             // Controls the default color of all wireframes. Used as the default color for global wireframes.
             // Can be changed per mesh using the `WireframeColor` component.
             ..default()

@@ -6,30 +6,25 @@ default-run = "main"
 
 [dependencies]
 anyhow = "1.0.86"
-bevy = { version = "0.13.2", features = ["dynamic_linking"] }
-bevy-inspector-egui = "0.24.0"
-bevy_log = "0.13.2"
-bevy_rapier3d = { version = "0.26.0", features = [ "simd-stable", "debug-render-3d" ] }
-bevy_third_person_camera = "0.1.10"
+bevy = { version = "0.14.0-rc.3", features = ["dynamic_linking"] }
+bevy-inspector-egui = {  path = "../bevy-inspector-egui/crates/bevy-inspector-egui" }
+bevy_log = "0.14.0-rc.3"
+bevy_rapier3d = { version = "0.27.0-rc.1",  features = [ "simd-stable", "debug-render-3d" ] }
 ciborium = { version = "^0.2.2", optional = true }
 clap = { version = "4.5.7", features = ["derive"] }
 colorgrad = "0.6.2"
 env_logger = "0.11.3"
+glam = { version = "0.28.0" }
 image = "0.25.1"
 log = "0.4.21"
-nalgebra = { version = "0.32.6" }
 num-traits = "0.2.19"
 serde = { version = "^1.0", optional = true,  features = ["derive"] }
-smooth-bevy-cameras = "0.11.0"
+# smooth-bevy-cameras = "0.11.0"
 tiff = "0.9.1"
 
 [features]
 default = ["serde"]
-serde = ["dep:serde", "dep:ciborium", "nalgebra/serde-serialize"]
-
-[profile.release]
-strip = "symbols"
-lto = "fat"
+serde = ["dep:serde", "dep:ciborium" , "glam/serde" ]
 
 [[bin]]
 name = "rtin"
@@ -44,7 +39,12 @@ path = "src/main.rs"
 
 [profile.dev]
 opt-level = 1
+incremental = true
 
 # Enable high optimizations for dependencies (incl. Bevy), but not for our code:
 [profile.dev.package."*"]
-opt-level = 3
+opt-level =  1
+
+[profile.release]
+# strip = "symbols"
+lto = "thin"

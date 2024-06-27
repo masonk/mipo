@@ -143,20 +143,20 @@ fn spawn_objects(
         )
     };
 
-    let blue_cube = cube(
-        4.0,
-        materials.add(Color::BLUE),
-        Transform::from_xyz(-5.5, 3.1, 5.5),
-        "cube_blue".to_string(),
-    );
+    // let blue_cube = cube(
+    //     4.0,
+    //     materials.add(Color::BLUE),
+    //     Transform::from_xyz(-5.5, 3.1, 5.5),
+    //     "cube_blue".to_string(),
+    // );
 
-    let red_cube = cube(
-        2.0,
-        materials.add(Color::RED),
-        Transform::from_xyz(5.0, 0.7, -1.1),
-        "cube_red".to_string(),
-    );
+    // let red_cube = cube(
+    //     2.0,
+    //     materials.add(Color::RED),
+    //     Transform::from_xyz(5.0, 0.7, -1.1),
+    //     "cube_red".to_string(),
+    // );
 
-    commands.spawn(blue_cube);
-    commands.spawn(red_cube);
+    // commands.spawn(blue_cube);
+    // commands.spawn(red_cube);
 }

@@ -1,4 +1,4 @@
-pub use nalgebra::{Vector2, Vector3};
+pub use glam::{vec2, vec3, UVec2, UVec3, Vec2 as Vector2, Vec3 as Vector3};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -29,16 +29,6 @@ impl<T> Triangle<T> {
     }
 }
 
-#[allow(dead_code)]
-pub fn vec2<T>(a: T, b: T) -> Vector2<T> {
-    Vector2::new(a, b)
-}
-
-#[allow(dead_code)]
-pub fn vec3<T>(a: T, b: T, c: T) -> Vector3<T> {
-    Vector3::new(a, b, c)
-}
-
 pub struct TriangleIterator<'a, T> {
     t: &'a Triangle<T>,
     pos: u32,
@@ -67,46 +57,46 @@ impl<'a, T> IntoIterator for &'a Triangle<T> {
     }
 }
 
-impl<T> Triangle<Vector2<T>>
-where
-    T: nalgebra::Scalar
-        + num_traits::AsPrimitive<f32>
-        + num_traits::identities::Zero
-        + nalgebra::ClosedSub
-        + nalgebra::ClosedAdd
-        + nalgebra::ClosedMul,
-{
-    pub fn barycentric(&self, p: Vector2<T>) -> Triangle<f32> {
-        // https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
-        let v0 = self.b - self.a;
-        let v1 = self.c - self.a;
-        let v2 = p - self.a;
-        let d00 = v0.dot(&v0);
-        let d01 = v0.dot(&v1);
-        let d11 = v1.dot(&v1);
-        let d20 = v2.dot(&v0);
-        let d21 = v2.dot(&v1);
-        let inverse_denom = 1.0 / ((d00 * d11) - (d01 * d01)).as_();
+// impl<T> Triangle<Vector2<T>>
+// where
+//     T: nalgebra::Scalar
+//         + num_traits::AsPrimitive<f32>
+//         + num_traits::identities::Zero
+//         + nalgebra::ClosedSub
+//         + nalgebra::ClosedAdd
+//         + nalgebra::ClosedMul,
+// {
+//     pub fn barycentric(&self, p: Vector2<T>) -> Triangle<f32> {
+//         // https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
+//         let v0 = self.b - self.a;
+//         let v1 = self.c - self.a;
+//         let v2 = p - self.a;
+//         let d00 = v0.dot(&v0);
+//         let d01 = v0.dot(&v1);
+//         let d11 = v1.dot(&v1);
+//         let d20 = v2.dot(&v0);
+//         let d21 = v2.dot(&v1);
+//         let inverse_denom = 1.0 / ((d00 * d11) - (d01 * d01)).as_();
 
-        let j = (d11 * d20 - d01 * d21).as_() * inverse_denom;
-        let k = (d00 * d21 - d01 * d20).as_() * inverse_denom;
-        let i = 1.0f32 - j - k;
+//         let j = (d11 * d20 - d01 * d21).as_() * inverse_denom;
+//         let k = (d00 * d21 - d01 * d20).as_() * inverse_denom;
+//         let i = 1.0f32 - j - k;
 
-        Triangle::new(i, j, k)
-    }
-}
+//         Triangle::new(i, j, k)
+//     }
+// }
 
 #[cfg(test)]
 mod test {
     use super::*;
 
-    #[test]
-    fn barycentric_coordinates_test() {
-        let t: Triangle<Vector2<i32>> = Triangle::new(vec2(0, 0), vec2(2, 0), vec2(2, 2));
-        assert_eq!(t.barycentric(vec2(0, 0)), Triangle::new(1., 0., 0.));
-        assert_eq!(t.barycentric(vec2(2, 0)), Triangle::new(0., 1., 0.));
-        assert_eq!(t.barycentric(vec2(2, 2)), Triangle::new(0., 0., 1.));
-        assert_eq!(t.barycentric(vec2(1, 1)), Triangle::new(0.5, 0.0, 0.5));
-        assert_eq!(t.barycentric(vec2(1, 0)), Triangle::new(0.5, 0.5, 0.0));
-    }
+    // #[test]
+    // fn barycentric_coordinates_test() {
+    //     let t: Triangle<Vector2<i32>> = Triangle::new(vec2(0, 0), vec2(2, 0), vec2(2, 2));
+    //     assert_eq!(t.barycentric(vec2(0, 0)), Triangle::new(1., 0., 0.));
+    //     assert_eq!(t.barycentric(vec2(2, 0)), Triangle::new(0., 1., 0.));
+    //     assert_eq!(t.barycentric(vec2(2, 2)), Triangle::new(0., 0., 1.));
+    //     assert_eq!(t.barycentric(vec2(1, 1)), Triangle::new(0.5, 0.0, 0.5));
+    //     assert_eq!(t.barycentric(vec2(1, 0)), Triangle::new(0.5, 0.5, 0.0));
+    // }
 }

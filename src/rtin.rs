@@ -1,4 +1,4 @@
-use crate::geometry::{vec2, vec3, Triangle, Vector2, Vector3};
+use crate::geometry::*;
 
 use anyhow::{anyhow, Result};
 use image::{io::Reader, ImageBuffer, Luma};
@@ -17,13 +17,12 @@ use serde::{Deserialize, Serialize};
 struct Label(u32);
 
 type Heightmap = ImageBuffer<Luma<u16>, Vec<u16>>;
-type Coords = Vector2<u32>;
-
+type Coords = UVec2;
 #[derive(Debug, Default, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct RtinTriangle {
     pub error: f32,
-    pub vertices: Triangle<Vector3<f32>>, // CCW ordering, last vertice is the right angle
+    pub vertices: Triangle<Vector3>, // CCW ordering, last vertice is the right angle
 }
 
 // All the data that can be processed offline for a heightmap. Includes an error map
@@ -38,8 +37,9 @@ pub struct RtinData {
 
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct MeshData {
-    pub vertices: Vec<Vector3<f32>>, // domain [0, 1]
+    pub vertices: Vec<Vector3>, // domain [0, 1]
     pub indices: Vec<u32>,
+    pub vertice_lookup: HashMap<u32, usize>,
 }
 
 pub fn threshold_triangle(
@@ -77,10 +77,11 @@ fn thresholded_triangles(error_threshold: f32, rtin_data: &RtinData) -> Vec<u32>
 
     triangles
 }
+
 // Construct a mesh from an rtin
 pub fn thresholded_mesh_data(error_threshold: f32, rtin_data: &RtinData) -> MeshData {
     let mut indices: Vec<u32> = vec![];
-    let mut vertices: Vec<Vector3<f32>> = vec![];
+    let mut vertices: Vec<Vector3> = vec![];
     let triangle_indices = thresholded_triangles(error_threshold, rtin_data);
     let mut vertice_lookup = HashMap::<u32, usize>::new();
 
@@ -101,7 +102,11 @@ pub fn thresholded_mesh_data(error_threshold: f32, rtin_data: &RtinData) -> Mesh
         }
     }
 
-    MeshData { vertices, indices }
+    MeshData {
+        vertices,
+        indices,
+        vertice_lookup,
+    }
 }
 
 pub fn preprocess_heightmap_from_img_path<P: AsRef<Path>>(path: P) -> Result<RtinData> {
@@ -246,9 +251,9 @@ pub fn preprocess_heightmap(heightmap: &Heightmap) -> Result<RtinData> {
         let label = idx_to_label(i);
         let coords = coords(label, x);
 
-        let a = vec2(coords.a[0] as f32, coords.a[1] as f32);
-        let b = vec2(coords.b[0] as f32, coords.b[1] as f32);
-        let c = vec2(coords.c[0] as f32, coords.c[1] as f32);
+        let a = Vector2::new(coords.a[0] as f32, coords.a[1] as f32);
+        let b = Vector2::new(coords.b[0] as f32, coords.b[1] as f32);
+        let c = Vector2::new(coords.c[0] as f32, coords.c[1] as f32);
 
         let a_z = heightmap.get_pixel(a[0] as u32, a[1] as u32)[0];
         let b_z = heightmap.get_pixel(b[0] as u32, b[1] as u32)[0];
@@ -263,9 +268,9 @@ pub fn preprocess_heightmap(heightmap: &Heightmap) -> Result<RtinData> {
         let v0 = b - a;
         let v1 = c - a;
 
-        let d00 = v0.dot(&v0);
-        let d01 = v0.dot(&v1);
-        let d11 = v1.dot(&v1);
+        let d00 = v0.dot(v0);
+        let d01 = v0.dot(v1);
+        let d11 = v1.dot(v1);
 
         let inverse_denom = 1.0 / ((d00 * d11) - (d01 * d01)) as f32;
 
@@ -274,8 +279,8 @@ pub fn preprocess_heightmap(heightmap: &Heightmap) -> Result<RtinData> {
 
         for p in points_in_bounding_box(Triangle { a, b, c }) {
             let v2 = p - a;
-            let d20 = v2.dot(&v0);
-            let d21 = v2.dot(&v1);
+            let d20 = v2.dot(v0);
+            let d21 = v2.dot(v1);
 
             let j = (d11 * d20 - d01 * d21) as f32 * inverse_denom;
             // Any point with a negative barycentric coordinate lies outside
@@ -308,9 +313,9 @@ pub fn preprocess_heightmap(heightmap: &Heightmap) -> Result<RtinData> {
         let triangle = RtinTriangle {
             error: max,
             vertices: Triangle::new(
-                vec3(a[0], a[1], a_z as f32 / std::u16::MAX as f32),
-                vec3(b[0], b[1], b_z as f32 / std::u16::MAX as f32),
-                vec3(c[0], c[1], c_z as f32 / std::u16::MAX as f32),
+                Vector3::new(a[0], a[1], a_z as f32 / std::u16::MAX as f32),
+                Vector3::new(b[0], b[1], b_z as f32 / std::u16::MAX as f32),
+                Vector3::new(c[0], c[1], c_z as f32 / std::u16::MAX as f32),
             ),
         };
         triangles.push(triangle);
@@ -324,11 +329,11 @@ pub fn preprocess_heightmap(heightmap: &Heightmap) -> Result<RtinData> {
     })
 }
 
-fn points_in_bounding_box(Triangle { a, b, c }: Triangle<Vector2<f32>>) -> Vec<Vector2<f32>> {
+fn points_in_bounding_box(Triangle { a, b, c }: Triangle<Vector2>) -> Vec<Vector2> {
     let mut points = vec![];
 
-    let bottom_left = vec2(a[0].min(b[0]).min(c[0]), a[1].min(b[1]).min(c[1]));
-    let top_right = vec2(a[0].max(b[0]).max(c[0]), a[1].max(b[1]).max(c[1]));
+    let bottom_left = Vector2::new(a[0].min(b[0]).min(c[0]), a[1].min(b[1]).min(c[1]));
+    let top_right = Vector2::new(a[0].max(b[0]).max(c[0]), a[1].max(b[1]).max(c[1]));
 
     for i in bottom_left[0] as u32..=top_right[0] as u32 {
         for j in bottom_left[1] as u32..=top_right[1] as u32 {
@@ -392,7 +397,7 @@ enum Step {
     Left,
     Right,
 }
-fn coords(label: Label, grid_size: u32) -> Triangle<Vector2<u32>> {
+fn coords(label: Label, grid_size: u32) -> Triangle<UVec2> {
     /*
      *   "Determining the coordinates of the three vertices of a triangle from its label is straightfoward. The label
      *    describes a path in the binary tree representing the surface. At each step in this path, as one descends
@@ -415,9 +420,9 @@ fn coords(label: Label, grid_size: u32) -> Triangle<Vector2<u32>> {
      *   .
      *   c  .  .  .  b
      */
-    let mut a: Coords = Vector2::default();
-    let mut b: Coords = Vector2::default();
-    let mut c: Coords = Vector2::default();
+    let mut a: Coords = UVec2::ZERO;
+    let mut b: Coords = UVec2::ZERO;
+    let mut c: Coords = UVec2::ZERO;
 
     let steps = steps(label);
     use Step::*;
@@ -491,6 +496,8 @@ fn steps(Label(mut id): Label) -> Vec<Step> {
 
 #[cfg(test)]
 mod test {
+    use bevy_rapier3d::parry::utils::hashmap;
+
     use super::*;
     use crate::geometry::{vec2, vec3};
 
@@ -695,7 +702,8 @@ mod test {
                     35, 4, 14, 10, 35, 14, 38, 10, 13, 12, 38, 13, 38, 37, 36, 10, 38, 36, 39, 26,
                     40, 37, 39, 40, 39, 32, 31, 26, 39, 31, 35, 26, 29, 4, 35, 29, 35, 37, 40, 26,
                     35, 40
-                ]
+                ],
+                vertice_lookup: HashMap::new()
             }
         )
     }

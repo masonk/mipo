@@ -54,35 +54,22 @@ pub fn make_mesh(mesh_data: &MeshData, _options: &MeshOptions) -> Mesh {
             indices.push(mesh_data.indices[i * 3 + j]);
         }
     }
-
+    info!("Computing positions for {} vertices", vertices.len());
     mesh.insert_attribute(
         Mesh::ATTRIBUTE_POSITION,
         VertexAttributeValues::Float32x3(vertices),
     );
+
+    info!("Computed {} color values", colors.len());
     mesh.insert_attribute(
         Mesh::ATTRIBUTE_COLOR,
         VertexAttributeValues::Float32x4(colors),
     );
+
+    info!("Computed {} indices", indices.len());
     mesh.insert_indices(Indices::U32(indices));
 
-    let mut normals: Vec<[f32; 3]> = Vec::new();
-    for i in 0..triangle_number {
-        let a_i = mesh_data.indices[i * 3];
-        let b_i = mesh_data.indices[i * 3 + 1];
-        let c_i = mesh_data.indices[i * 3 + 2];
-
-        let a = mesh_data.vertices[a_i as usize];
-        let b = mesh_data.vertices[b_i as usize];
-        let c = mesh_data.vertices[c_i as usize];
-
-        let ac = c - a;
-        normals.push((b - a).cross(&ac).normalize().into());
-    }
-
-    mesh.insert_attribute(
-        Mesh::ATTRIBUTE_NORMAL,
-        VertexAttributeValues::Float32x3(normals),
-    );
+    mesh.compute_smooth_normals();
 
     mesh
 }

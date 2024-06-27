@@ -85,7 +85,6 @@ fn handle_input(
 
 fn player_movement(
     time: Res<Time>,
-    // enable: Res<EnablePlayerControl>,
     mut input: ResMut<MovementInput>,
     mut player: Query<(
         &mut Transform,
@@ -95,9 +94,6 @@ fn player_movement(
     mut vertical_movement: Local<f32>,
     mut grounded_timer: Local<f32>,
 ) {
-    // if !enable.0 {
-    //     return;
-    // }
     let Ok((transform, mut controller, output)) = player.get_single_mut() else {
         return;
     };
@@ -134,9 +130,6 @@ fn player_look(
     mut camera: Query<&mut Transform, With<FirstPersonCam>>,
     look: ResMut<LookInput>,
 ) {
-    // if !enable.0 {
-    //     return;
-    // }
     if look.x == 0.0 && look.y == 0.0 {
         return;
     }
@@ -165,7 +158,7 @@ fn spawn_player(
         SpotLightBundle {
             spot_light: SpotLight {
                 shadows_enabled: true,
-                color: Color::rgba(0.927, 0.855, 0.507, 1.000),
+                color: Color::srgba(0.927, 0.855, 0.507, 1.000),
                 intensity: 100000.0,
                 range: 9.0,
                 outer_angle: 0.5,
