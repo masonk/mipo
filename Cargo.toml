@@ -14,12 +14,12 @@ ciborium = { version = "^0.2.2", optional = true }
 clap = { version = "4.5.7", features = ["derive"] }
 colorgrad = "0.6.2"
 env_logger = "0.11.3"
-glam = { version = "0.28.0" }
+glam = { version = ">=0.25.0" }
 image = "0.25.1"
 log = "0.4.21"
 num-traits = "0.2.19"
 serde = { version = "^1.0", optional = true,  features = ["derive"] }
-# smooth-bevy-cameras = "0.11.0"
+smooth-bevy-cameras = "0.11.0"
 tiff = "0.9.1"
 
 [features]
@@ -48,3 +48,6 @@ opt-level =  3
 [profile.release]
 # strip = "symbols"
 lto = "thin"
+
+[patch.crates-io]
+smooth-bevy-cameras = { path = "../smooth-bevy-cameras" }

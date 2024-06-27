@@ -1,7 +1,8 @@
+use bevy::math::vec3;
 use bevy::prelude::*;
 
 use crate::player::EnablePlayerControl;
-// use smooth_bevy_cameras::controllers::unreal::{UnrealCameraBundle, UnrealCameraController};
+use smooth_bevy_cameras::controllers::unreal::{UnrealCameraBundle, UnrealCameraController};
 pub struct CameraPlugin;
 
 #[derive(Debug, Clone, Component)]
@@ -18,6 +19,13 @@ impl Plugin for CameraPlugin {
 }
 
 fn spawn_camera(mut commands: Commands) {
+    let unreal = UnrealCameraBundle::new(
+        flycam_controller(),
+        vec3(-154.44, 204.027, -111.268),
+        vec3(150., 20.0, 150.0),
+        Vec3::Y,
+    );
+
     commands
         .spawn(Camera3dBundle {
             camera: Camera {
@@ -26,21 +34,16 @@ fn spawn_camera(mut commands: Commands) {
             },
             ..default()
         })
-        .insert(Flycam);
-    // .insert(UnrealCameraBundle::new(
-    //     flycam_controller(),
-    //     Vec3::new(-154.44, 204.027, -111.268),
-    //     Vec3::new(150., 20.0, 150.0),
-    //     Vec3::Y,
-    // ));
+        .insert(Flycam)
+        .insert(unreal);
 }
 
-// fn flycam_controller() -> UnrealCameraController {
-//     UnrealCameraController {
-//         keyboard_mvmt_sensitivity: 100.0,
-//         ..default()
-//     }
-// }
+fn flycam_controller() -> UnrealCameraController {
+    UnrealCameraController {
+        keyboard_mvmt_sensitivity: 100.0,
+        ..default()
+    }
+}
 fn handle_input(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut enable: ResMut<EnablePlayerControl>,
@@ -54,9 +57,9 @@ fn handle_input(
 
         if fly_cam.is_active {
             info!("Setting fps_cam to active");
-            // commands
-            //     .entity(fly_cam_entity_id)
-            //     .remove::<UnrealCameraController>();
+            commands
+                .entity(fly_cam_entity_id)
+                .remove::<UnrealCameraController>();
             enable.0 = true;
             fly_cam.is_active = false;
             fps_cam.is_active = true;
@@ -65,9 +68,9 @@ fn handle_input(
             enable.0 = false;
             fly_cam.is_active = true;
             fps_cam.is_active = false;
-            // commands
-            //     .entity(fly_cam_entity_id)
-            //     .insert(flycam_controller());
+            commands
+                .entity(fly_cam_entity_id)
+                .insert(flycam_controller());
         }
     }
 }

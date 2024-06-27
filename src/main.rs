@@ -26,7 +26,7 @@ mod world;
 use bevy::log::LogPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier3d::prelude::*;
-// use smooth_bevy_cameras::{controllers::unreal::UnrealCameraPlugin, LookTransformPlugin};
+use smooth_bevy_cameras::{controllers::unreal::UnrealCameraPlugin, LookTransformPlugin};
 
 use camera::CameraPlugin;
 use player::PlayerPlugin;
@@ -48,14 +48,14 @@ fn main() {
             RapierDebugRenderPlugin::default().disabled(),
             PlayerPlugin,
             CameraPlugin,
-            // LookTransformPlugin,
-            // UnrealCameraPlugin::default(),
+            LookTransformPlugin,
+            UnrealCameraPlugin::default(),
             WireframePlugin,
             WorldPlugin {
                 terrain_path: args.terrain,
             },
             // ThirdPersonCameraPlugin,
-            // WorldInspectorPlugin::new(),
+            WorldInspectorPlugin::new(),
         ))
         .insert_resource(WireframeConfig {
             // The global wireframe config enables drawing of wireframes on every mesh,
