@@ -18,6 +18,7 @@ struct Args {
 mod bevy_rtin;
 mod camera;
 mod geometry;
+mod items;
 mod physics;
 mod player;
 mod rtin;
@@ -48,6 +49,7 @@ fn main() {
             RapierDebugRenderPlugin::default().disabled(),
             PlayerPlugin,
             CameraPlugin,
+            items::spinner::SpinnerUiPlugin,
             LookTransformPlugin,
             UnrealCameraPlugin::default(),
             WireframePlugin,

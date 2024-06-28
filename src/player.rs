@@ -53,9 +53,9 @@ fn handle_input(
     mut look: ResMut<LookInput>,
     mut mouse_events: EventReader<MouseMotion>,
 ) {
-    if !enable.0 {
-        return;
-    }
+    // if !enable.0 {
+    //     return;
+    // }
     if keyboard.pressed(KeyCode::KeyW) {
         movement.z -= 1.0;
     }
@@ -85,6 +85,7 @@ fn handle_input(
 
 fn player_movement(
     time: Res<Time>,
+    enable: Res<EnablePlayerControl>,
     mut input: ResMut<MovementInput>,
     mut player: Query<(
         &mut Transform,
@@ -94,6 +95,9 @@ fn player_movement(
     mut vertical_movement: Local<f32>,
     mut grounded_timer: Local<f32>,
 ) {
+    if !enable.0 {
+        return;
+    }
     let Ok((transform, mut controller, output)) = player.get_single_mut() else {
         return;
     };
@@ -133,20 +137,24 @@ fn player_look(
     if look.x == 0.0 && look.y == 0.0 {
         return;
     }
-    let mut transform = match player.get_single_mut() {
+    let mut player_transform = match player.get_single_mut() {
         Ok(transform) => transform,
         Err(e) => return warn!("Failed to look up player transform: {e}"),
     };
-    // Rotating the player in the xz plane also rotates the player's child camera
-    transform.rotation = Quat::from_axis_angle(Vec3::Y, look.x.to_radians());
 
-    let mut transform = match camera.get_single_mut() {
+    // Rotating the player in the xz plane also rotates the player's child camera
+    player_transform.rotation = Quat::from_axis_angle(Vec3::Y, look.x.to_radians());
+
+    let mut camera_transform = match camera.get_single_mut() {
         Ok(t) => t,
         Err(e) => return warn!("Failed to look up player camera transformer: {e}"),
     };
 
     // we additionally want to rotate the player camera in the y direction but not rotate the player's body
-    transform.rotation = Quat::from_axis_angle(Vec3::X, look.y.to_radians());
+    camera_transform.rotation = Quat::from_axis_angle(Vec3::X, look.y.to_radians());
+    // pull the camera out of the player's body by 1.0 in the direction the player is facing.
+    camera_transform.translation = camera_transform.forward() * 1.0;
+    camera_transform.translation.y = 1.0;
 }
 
 fn spawn_player(
