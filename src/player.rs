@@ -53,9 +53,9 @@ fn handle_input(
     mut look: ResMut<LookInput>,
     mut mouse_events: EventReader<MouseMotion>,
 ) {
-    // if !enable.0 {
-    //     return;
-    // }
+    if !enable.0 {
+        return;
+    }
     if keyboard.pressed(KeyCode::KeyW) {
         movement.z -= 1.0;
     }
@@ -149,12 +149,8 @@ fn player_look(
         Ok(t) => t,
         Err(e) => return warn!("Failed to look up player camera transformer: {e}"),
     };
-
     // we additionally want to rotate the player camera in the y direction but not rotate the player's body
     camera_transform.rotation = Quat::from_axis_angle(Vec3::X, look.y.to_radians());
-    // pull the camera out of the player's body by 1.0 in the direction the player is facing.
-    camera_transform.translation = camera_transform.forward() * 1.0;
-    camera_transform.translation.y = 1.0;
 }
 
 fn spawn_player(
@@ -217,7 +213,8 @@ fn spawn_player(
                     fov: 1.0,
                     ..default()
                 }),
-                ..Default::default()
+                transform: Transform::from_xyz(0.0, 0.7, -1.0),
+                ..default()
             },
             Name::new("FirstPersonCamera"),
             FirstPersonCam,
