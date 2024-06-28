@@ -35,3 +35,6 @@ rustflags = [
   "-Zshare-generics=n",
   "-Zthreads=0",        # (Nightly) Use improved multithreading with the recommended amount of threads.
 ]
+
+[target.wasm32-unknown-unknown]
+runner = "wasm-server-runner"

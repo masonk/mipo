@@ -27,38 +27,56 @@ mod world;
 use bevy::log::LogPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier3d::prelude::*;
+use bevy_stl::StlPlugin;
 use smooth_bevy_cameras::{controllers::unreal::UnrealCameraPlugin, LookTransformPlugin};
 
 use camera::CameraPlugin;
+use items::spinner::SpinnerUiPlugin;
 use player::PlayerPlugin;
 use world::WorldPlugin;
 
+// cargo run  --target wasm32-unknown-unknown  assets/grand_canyon_small_heightmap.png
 // cargo run assets/grand_canyon_small_heightmap.png
 // cargo run assets/36_377_-112_445_11_8129_8129.png
 fn main() {
-    let args = Args::parse();
+    // let args = Args::parse();
 
     App::new()
         .add_plugins((
-            DefaultPlugins.set(LogPlugin {
-                filter: "info,wgpu_core=warn,wgpu_hal=warn,main=debug".into(),
-                level: bevy::log::Level::DEBUG,
-                ..default()
-            }),
+            DefaultPlugins
+                .set(LogPlugin {
+                    filter: "info,wgpu_core=warn,wgpu_hal=warn,main=debug".into(),
+                    level: bevy::log::Level::DEBUG,
+                    ..default()
+                })
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        // fill the entire browser window
+                        // TODO: re-enable in Bevy 0.14
+                        // fit_canvas_to_parent: true,
+                        // don't hijack keyboard shortcuts like F5, F6, F12, Ctrl+R etc.
+                        fit_canvas_to_parent: true,
+                        prevent_default_event_handling: false,
+                        ..default()
+                    }),
+                    ..default()
+                }),
             RapierPhysicsPlugin::<NoUserData>::default(),
             RapierDebugRenderPlugin::default().disabled(),
             PlayerPlugin,
             CameraPlugin,
-            items::spinner::SpinnerUiPlugin,
             LookTransformPlugin,
             UnrealCameraPlugin::default(),
             WireframePlugin,
             WorldPlugin {
-                terrain_path: args.terrain,
+                terrain_path: "assets/grand_canyon_small_heightmap.png".into(),
             },
             // ThirdPersonCameraPlugin,
             WorldInspectorPlugin::new(),
+            StlPlugin,
+            SpinnerUiPlugin,
         ))
+        .insert_resource(ClearColor(Color::srgb(0.53, 0.53, 0.53))) // <-- new
         .insert_resource(WireframeConfig {
             // The global wireframe config enables drawing of wireframes on every mesh,
             // except those with `NoWireframe`. Meshes with `Wireframe` will always have a wireframe,
