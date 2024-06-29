@@ -17,23 +17,21 @@ struct Args {
 
 mod bevy_rtin;
 mod camera;
+mod components;
 mod geometry;
 mod items;
 mod physics;
 mod player;
+mod routes;
 mod rtin;
 mod world;
 
 use bevy::log::LogPlugin;
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy_inspector_egui;
+use bevy_lunex;
 use bevy_rapier3d::prelude::*;
-use bevy_stl::StlPlugin;
-use smooth_bevy_cameras::{controllers::unreal::UnrealCameraPlugin, LookTransformPlugin};
-
-use camera::CameraPlugin;
-use items::spinner::SpinnerUiPlugin;
-use player::PlayerPlugin;
-use world::WorldPlugin;
+use bevy_stl;
+use smooth_bevy_cameras;
 
 // cargo run  --target wasm32-unknown-unknown  assets/grand_canyon_small_heightmap.png
 // cargo run assets/grand_canyon_small_heightmap.png
@@ -51,6 +49,8 @@ fn main() {
                 })
                 .set(WindowPlugin {
                     primary_window: Some(Window {
+                        position: WindowPosition::At((0, 0).into()),
+                        resolution: bevy::window::WindowResolution::new(1500., 1420.),
                         // fill the entire browser window
                         // TODO: re-enable in Bevy 0.14
                         // fit_canvas_to_parent: true,
@@ -61,30 +61,35 @@ fn main() {
                     }),
                     ..default()
                 }),
-            RapierPhysicsPlugin::<NoUserData>::default(),
-            RapierDebugRenderPlugin::default().disabled(),
-            PlayerPlugin,
-            CameraPlugin,
-            LookTransformPlugin,
-            UnrealCameraPlugin::default(),
+            bevy_rapier3d::plugin::RapierPhysicsPlugin::<NoUserData>::default(),
+            bevy_rapier3d::render::RapierDebugRenderPlugin::default().disabled(),
+            player::PlayerPlugin,
+            smooth_bevy_cameras::LookTransformPlugin,
+            smooth_bevy_cameras::controllers::unreal::UnrealCameraPlugin::default(),
             WireframePlugin,
-            WorldPlugin {
+            world::WorldPlugin {
                 terrain_path: "assets/grand_canyon_small_heightmap.png".into(),
             },
             // ThirdPersonCameraPlugin,
-            WorldInspectorPlugin::new(),
-            StlPlugin,
-            SpinnerUiPlugin,
+            bevy_inspector_egui::quick::WorldInspectorPlugin::new(),
+            bevy_stl::StlPlugin,
+            components::ComponentPlugin,
         ))
-        .insert_resource(ClearColor(Color::srgb(0.53, 0.53, 0.53))) // <-- new
+        .add_systems(Startup, startup)
+        .add_plugins((
+            items::ItemsPlugin,
+            routes::RoutesPlugin,
+            bevy_lunex::UiPlugin, // diegetic ui system
+        ))
+        .insert_resource(ClearColor(Color::srgb(0.53, 0.53, 0.53)))
         .insert_resource(WireframeConfig {
-            // The global wireframe config enables drawing of wireframes on every mesh,
-            // except those with `NoWireframe`. Meshes with `Wireframe` will always have a wireframe,
-            // regardless of the global configuration.
             global: false,
-            // Controls the default color of all wireframes. Used as the default color for global wireframes.
-            // Can be changed per mesh using the `WireframeColor` component.
             ..default()
         })
         .run();
+}
+
+fn startup(mut commands: Commands) {
+    commands.spawn(camera::camera2d());
+    commands.spawn(routes::hud_route::HudRoute);
 }

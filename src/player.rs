@@ -25,7 +25,7 @@ impl Plugin for PlayerPlugin {
             .init_resource::<EnablePlayerControl>()
             .add_systems(Startup, spawn_player)
             .add_systems(PreUpdate, handle_input.after(InputSystem))
-            .add_systems(Update, player_look)
+            // .add_systems(Update, player_look)
             .add_systems(FixedUpdate, player_movement);
     }
 }
@@ -147,7 +147,7 @@ fn player_look(
 
     let mut camera_transform = match camera.get_single_mut() {
         Ok(t) => t,
-        Err(e) => return warn!("Failed to look up player camera transformer: {e}"),
+        Err(e) => return, // return warn!("Failed to look up player camera transform: {e}"),
     };
     // we additionally want to rotate the player camera in the y direction but not rotate the player's body
     camera_transform.rotation = Quat::from_axis_angle(Vec3::X, look.y.to_radians());
@@ -207,17 +207,17 @@ fn spawn_player(
 
     commands.spawn(player).with_children(|b| {
         b.spawn(flashlight);
-        b.spawn((
-            Camera3dBundle {
-                projection: Projection::Perspective(PerspectiveProjection {
-                    fov: 1.0,
-                    ..default()
-                }),
-                transform: Transform::from_xyz(0.0, 0.7, -1.0),
-                ..default()
-            },
-            Name::new("FirstPersonCamera"),
-            FirstPersonCam,
-        ));
+        // b.spawn((
+        //     Camera3dBundle {
+        //         projection: Projection::Perspective(PerspectiveProjection {
+        //             fov: 1.0,
+        //             ..default()
+        //         }),
+        //         transform: Transform::from_xyz(0.0, 0.7, -1.0),
+        //         ..default()
+        //     },
+        //     Name::new("FirstPersonCamera"),
+        //     FirstPersonCam,
+        // ));
     });
 }

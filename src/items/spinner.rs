@@ -4,10 +4,6 @@ use bevy::{
     prelude::*,
 };
 use glam::vec3;
-use image::imageops::rotate180;
-
-#[derive(Component)]
-pub struct SpinnerUi;
 
 pub struct SpinnerUiPlugin;
 

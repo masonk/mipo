@@ -16,11 +16,7 @@ impl Plugin for WorldPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Startup,
-            (
-                make_spawn_floor(self.terrain_path.clone()),
-                spawn_light,
-                spawn_objects,
-            ),
+            (make_spawn_floor(self.terrain_path.clone()), spawn_light),
         );
         app.add_systems(Update, (wireframe_control));
     }
@@ -46,7 +42,7 @@ fn make_spawn_floor(
     move |mut commands, mut meshes, mut materials| {
         let (shaded, shaded_mesh_data) =
             bevy_rtin::load_mesh(&terrain_path, MeshOptions::default()).unwrap();
-
+        info!("Spawning terrain mesh from {:?}", terrain_path);
         let parry3d_vertices: Vec<Vect> = shaded_mesh_data
             .vertices
             .into_iter()
@@ -100,13 +96,18 @@ fn spawn_light(mut commands: Commands) {
     let light_grid_size = 3;
     let interval = grid_size / light_grid_size as f32;
 
+    info!(
+        "Spawning {}x{} point lights",
+        light_grid_size, light_grid_size
+    );
+
     for x in 0..light_grid_size {
         for z in 0..light_grid_size {
             let transform = Transform::from_xyz(x as f32 * interval, 150., z as f32 * interval);
             commands.spawn((
                 PointLightBundle {
                     point_light: PointLight {
-                        color: Color::rgba(1.0, 1.0, 1.0, 1.000),
+                        color: Color::srgba(1.0, 1.0, 1.0, 1.000),
                         intensity: 2e8,
                         range: 500.,
                         radius: 25.,
@@ -120,43 +121,4 @@ fn spawn_light(mut commands: Commands) {
             ));
         }
     }
-}
-
-fn spawn_objects(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-    let mut cube = |size: f32,
-                    material: Handle<StandardMaterial>,
-                    transform: Transform,
-                    name: String|
-     -> (PbrBundle, Name) {
-        (
-            PbrBundle {
-                mesh: meshes.add(Mesh::from(Cuboid::new(size, size, size))),
-                material: material,
-                transform: transform,
-                ..default()
-            },
-            Name::new(name),
-        )
-    };
-
-    // let blue_cube = cube(
-    //     4.0,
-    //     materials.add(Color::BLUE),
-    //     Transform::from_xyz(-5.5, 3.1, 5.5),
-    //     "cube_blue".to_string(),
-    // );
-
-    // let red_cube = cube(
-    //     2.0,
-    //     materials.add(Color::RED),
-    //     Transform::from_xyz(5.0, 0.7, -1.1),
-    //     "cube_red".to_string(),
-    // );
-
-    // commands.spawn(blue_cube);
-    // commands.spawn(red_cube);
 }

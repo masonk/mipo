@@ -742,6 +742,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_eventlistener"
+version = "0.8.0-rc.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "005f03fe84c42f9b5ddcf5996b343a78e8b2701bc5f7136bb52eaef889760070"
+dependencies = [
+ "bevy_app",
+ "bevy_ecs",
+ "bevy_eventlistener_derive",
+ "bevy_hierarchy",
+ "bevy_utils",
+]
+
+[[package]]
+name = "bevy_eventlistener_derive"
+version = "0.8.0-rc.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "07ce0a3ccc07252fb0f8f500278eec458237b9c764f54069a4c2dbda3e37664c"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.68",
+]
+
+[[package]]
 name = "bevy_gilrs"
 version = "0.14.0-rc.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -908,6 +932,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_lunex"
+version = "0.1.1"
+source = "git+https://github.com/bytestring-net/bevy_lunex#6b469a5be73e9b506d2b317ac315032e69bd8385"
+dependencies = [
+ "bevy",
+ "bevy_mod_picking",
+ "colored",
+ "lunex_engine",
+]
+
+[[package]]
 name = "bevy_macro_utils"
 version = "0.14.0-rc.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -942,6 +977,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_mod_picking"
+version = "0.20.0-rc.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "08cd94dc2c3e6ccf12930f8d6f30a53915d636d834bcf3bab7c93c892402b0e9"
+dependencies = [
+ "bevy_app",
+ "bevy_core",
+ "bevy_core_pipeline",
+ "bevy_ecs",
+ "bevy_eventlistener",
+ "bevy_math",
+ "bevy_picking_core",
+ "bevy_picking_highlight",
+ "bevy_picking_input",
+ "bevy_picking_selection",
+ "bevy_reflect",
+ "bevy_render",
+ "bevy_text",
+ "bevy_ui",
+ "bevy_utils",
+ "bevy_window",
+]
+
+[[package]]
 name = "bevy_pbr"
 version = "0.14.0-rc.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -966,6 +1025,76 @@ dependencies = [
  "radsort",
  "smallvec",
  "static_assertions",
+]
+
+[[package]]
+name = "bevy_picking_core"
+version = "0.20.0-rc.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2e3b9a2c8e04363e1bf620b60669e604d85baaf4bb1659c8518deabd90335ae8"
+dependencies = [
+ "bevy_app",
+ "bevy_derive",
+ "bevy_ecs",
+ "bevy_eventlistener",
+ "bevy_math",
+ "bevy_reflect",
+ "bevy_render",
+ "bevy_transform",
+ "bevy_utils",
+ "bevy_window",
+ "uuid",
+]
+
+[[package]]
+name = "bevy_picking_highlight"
+version = "0.20.0-rc.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4a0f0ec76f161fbc46b2b052b82e24ef66482f25ac19478b9049a027dfbaf85c"
+dependencies = [
+ "bevy_app",
+ "bevy_asset",
+ "bevy_color",
+ "bevy_ecs",
+ "bevy_pbr",
+ "bevy_picking_core",
+ "bevy_picking_selection",
+ "bevy_reflect",
+ "bevy_render",
+]
+
+[[package]]
+name = "bevy_picking_input"
+version = "0.20.0-rc.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5559274b090b60f24bbf5875ac436b7424cae88d95d0c4ce5d067c64bbbb5815"
+dependencies = [
+ "bevy_app",
+ "bevy_ecs",
+ "bevy_hierarchy",
+ "bevy_input",
+ "bevy_math",
+ "bevy_picking_core",
+ "bevy_picking_selection",
+ "bevy_reflect",
+ "bevy_render",
+ "bevy_utils",
+ "bevy_window",
+]
+
+[[package]]
+name = "bevy_picking_selection"
+version = "0.20.0-rc.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "413c77d722bee8958cd2184a2b9ba8bb37e506dd37b60395f834be77ed5de7e9"
+dependencies = [
+ "bevy_app",
+ "bevy_ecs",
+ "bevy_eventlistener",
+ "bevy_input",
+ "bevy_picking_core",
+ "bevy_reflect",
+ "bevy_utils",
 ]
 
 [[package]]
@@ -1668,6 +1797,16 @@ name = "colorchoice"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b6a852b24ab71dffc585bcb46eaf7959d175cb865a7152e35b348d1b2960422"
+
+[[package]]
+name = "colored"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cbf2150cce219b664a8a70df7a1f933836724b503f8a413af9365b4dcc4d90b8"
+dependencies = [
+ "lazy_static",
+ "windows-sys 0.48.0",
+]
 
 [[package]]
 name = "colorgrad"
@@ -2999,6 +3138,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "lunex_engine"
+version = "0.1.1"
+source = "git+https://github.com/bytestring-net/bevy_lunex#6b469a5be73e9b506d2b317ac315032e69bd8385"
+dependencies = [
+ "bevy",
+ "colored",
+ "indexmap",
+ "thiserror",
+]
+
+[[package]]
 name = "mach2"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3099,6 +3249,7 @@ dependencies = [
  "bevy",
  "bevy-inspector-egui",
  "bevy_log",
+ "bevy_lunex",
  "bevy_rapier3d",
  "bevy_stl",
  "ciborium",
