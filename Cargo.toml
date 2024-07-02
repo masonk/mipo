@@ -4,19 +4,22 @@ version = "0.1.0"
 edition = "2021"
 default-run = "main"
 
+[alias]
+r = "run assets/grand_canyon_small_heightmap.png"
+
 [dependencies]
 anyhow = "1.0.86"
-bevy = { version = "0.14.0-rc.3", features = ["dynamic_linking"] }
+bevy = { version = "0.14.0-rc.4", features = ["dynamic_linking"] }
 bevy-inspector-egui = {  path = "../bevy-inspector-egui/crates/bevy-inspector-egui" }
 bevy_log = "0.14.0-rc.3"
-bevy_lunex = { git = "https://github.com/bytestring-net/bevy_lunex" }
+bevy_lunex = { git = "https://github.com/bytestring-net/bevy_lunex", features=["debug"] }
 bevy_rapier3d = { version = "0.27.0-rc.1",  features = [ "simd-stable", "debug-render-3d" ] }
 bevy_stl = "^0.14.0"
 ciborium = { version = "^0.2.2", optional = true }
 clap = { version = "4.5.7", features = ["derive"] }
 colorgrad = "0.6.2"
 env_logger = "0.11.3"
-glam = { version = ">=0.25.0" }
+glam = { version = "0.27.0" }
 image = "0.25.1"
 log = "0.4.21"
 num-traits = "0.2.19"

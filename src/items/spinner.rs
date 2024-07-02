@@ -28,9 +28,9 @@ pub fn setup(
             mesh: asset_server.load("torus1.stl"),
             material: materials.add(Color::srgb(0.9, 0.4, 0.3)),
             transform: Transform {
-                translation: vec3(100.0, 75.0, 0.0),
+                translation: vec3(100.0, 75.0, 0.0).into(),
                 rotation: Quat::from_rotation_x(f32::to_radians(90.0)),
-                scale: vec3(0.5, 0.5, 0.5),
+                scale: vec3(0.5, 0.5, 0.5).into(),
             },
             ..Default::default()
         },

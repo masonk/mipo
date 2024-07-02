@@ -1,12 +1,6 @@
-use bevy::{
-    math::vec3,
-    prelude::*,
-    render::render_resource::{
-        Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
-    },
-};
-
+use crate::palette::Palette;
 use crate::player::EnablePlayerControl;
+use bevy::{prelude::*, sprite::Anchor};
 use bevy_lunex::prelude::*;
 use smooth_bevy_cameras::controllers::unreal::{UnrealCameraBundle, UnrealCameraController};
 pub struct CameraPlugin;
@@ -19,108 +13,75 @@ pub(crate) struct FirstPersonCam;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        // app.add_systems(Startup, spawn_camera);
+        app.add_systems(Startup, spawn_camera);
         app.add_systems(Update, handle_input);
     }
 }
 
-fn spawn_camera(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
-    // Create a texture resource that our 3D camera will render to
-    let size = Extent3d {
-        width: 1920,
-        height: 1080,
-        ..default()
-    };
-
-    // This is the texture that will be rendered to.
-    let mut image = Image {
-        texture_descriptor: TextureDescriptor {
-            label: None,
-            size,
-            dimension: TextureDimension::D2,
-            format: TextureFormat::Bgra8UnormSrgb,
-            mip_level_count: 1,
-            sample_count: 1,
-            usage: TextureUsages::TEXTURE_BINDING
-                | TextureUsages::COPY_DST
-                | TextureUsages::RENDER_ATTACHMENT,
-            view_formats: &[],
-        },
-        ..default()
-    };
-    // Initiate the image
-    image.resize(size);
-
-    // Add our texture to asset server and get a handle
-    let image_handle = images.add(image);
-    commands.spawn((MainUi, camera2d()));
-
+fn spawn_camera(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut atlas_layout: ResMut<Assets<TextureAtlasLayout>>,
+) {
+    use bevy::core_pipeline::bloom::BloomSettings;
+    let cursor = asset_server.load("cursor.png");
     commands
         .spawn((
-            // This makes the UI entity able to receive camera data
-            MovableByCamera,
-            // This is our UI system
-            UiTreeBundle::<MainUi>::from(UiTree::new("Hello UI!")),
+            MainUi,
+            Camera2dBundle {
+                transform: Transform::from_xyz(0.0, 0.0, 1000.0),
+                camera: Camera {
+                    hdr: true,
+                    ..default()
+                },
+                //tonemapping: Tonemapping::None,
+                ..default()
+            },
+            BloomSettings::OLD_SCHOOL,
+            InheritedVisibility::default(),
+            /*VfxWiggleCamera {
+                sinusoid: vec![
+                    Sine {
+                        speed: 0.005,
+                        amplitude: 0.003,
+                        degree: 0.0,
+                    }
+                ]
+            }*/
         ))
-        .with_children(|ui| {
-            let root = UiLink::<MainUi>::path("Root");
-
-            ui.spawn((
-                root.add("Camera3d"),
-                UiLayout::solid()
-                    .size((1920.0, 1080.0))
-                    .scaling(Scaling::Fill)
-                    .pack::<Base>(),
-                UiImage2dBundle::from(image_handle.clone()),
+        .with_children(|camera| {
+            camera.spawn((
+                Cursor2d::new()
+                    .native_cursor(false)
+                    .register_cursor(CursorIcon::Default, 0, (14.0, 14.0))
+                    .register_cursor(CursorIcon::Pointer, 1, (10.0, 12.0))
+                    .register_cursor(CursorIcon::Grab, 2, (40.0, 40.0)),
+                // Add texture atlas to the cursor
+                TextureAtlas {
+                    layout: atlas_layout.add(TextureAtlasLayout::from_grid(
+                        UVec2::splat(80),
+                        3,
+                        1,
+                        None,
+                        None,
+                    )),
+                    index: 0,
+                },
+                SpriteBundle {
+                    texture: cursor,
+                    transform: Transform {
+                        scale: Vec3::new(0.45, 0.45, 1.0),
+                        ..default()
+                    },
+                    sprite: Sprite {
+                        color: Palette::Yellow.into(),
+                        anchor: Anchor::TopLeft,
+                        ..default()
+                    },
+                    ..default()
+                },
             ));
         });
-
-    // Spawn 3D camera view which will become an image texture in the main 2d scene
-    commands
-        .spawn(Camera3dBundle {
-            camera: Camera {
-                is_active: true,
-                clear_color: ClearColorConfig::Custom(Color::srgba(0.0, 0.0, 0.0, 0.0)),
-                // target: image_handle.into(),
-                ..default()
-            },
-            ..default()
-        })
-        .insert(Flycam)
-        .insert(UnrealCameraBundle::new(
-            flycam_controller(),
-            vec3(-154.44, 204.027, -111.268),
-            vec3(150., 20.0, 150.0),
-            Vec3::Y,
-        ));
-}
-
-pub fn camera2d() -> impl Bundle {
-    use bevy::core_pipeline::bloom::BloomSettings;
-
-    (
-        MainUi,
-        Camera2dBundle {
-            transform: Transform::from_xyz(0.0, 0.0, 1000.0),
-            camera: Camera {
-                hdr: true,
-                ..default()
-            },
-            //tonemapping: Tonemapping::None,
-            ..default()
-        },
-        BloomSettings::OLD_SCHOOL,
-        InheritedVisibility::default(),
-        /*VfxWiggleCamera {
-            sinusoid: vec![
-                Sine {
-                    speed: 0.005,
-                    amplitude: 0.003,
-                    degree: 0.0,
-                }
-            ]
-        }*/
-    )
 }
 
 fn flycam_controller() -> UnrealCameraController {

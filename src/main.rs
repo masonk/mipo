@@ -3,6 +3,7 @@
 #![feature(iter_array_chunks)]
 #![feature(array_chunks)]
 use bevy::{
+    ecs::schedule::{LogLevel, ScheduleBuildSettings},
     pbr::wireframe::{WireframeConfig, WireframePlugin},
     prelude::*,
 };
@@ -20,6 +21,7 @@ mod camera;
 mod components;
 mod geometry;
 mod items;
+mod palette;
 mod physics;
 mod player;
 mod routes;
@@ -40,6 +42,13 @@ fn main() {
     // let args = Args::parse();
 
     App::new()
+        // Enable ambiguity warnings for the Update schedule
+        // .edit_schedule(Update, |schedule| {
+        //     schedule.set_build_settings(ScheduleBuildSettings {
+        //         ambiguity_detection: LogLevel::Warn,
+        //         ..default()
+        //     });
+        // })
         .add_plugins((
             DefaultPlugins
                 .set(LogPlugin {
@@ -75,6 +84,7 @@ fn main() {
             bevy_stl::StlPlugin,
             components::ComponentPlugin,
         ))
+        .add_plugins(camera::CameraPlugin)
         .add_systems(Startup, startup)
         .add_plugins((
             items::ItemsPlugin,
@@ -90,6 +100,5 @@ fn main() {
 }
 
 fn startup(mut commands: Commands) {
-    commands.spawn(camera::camera2d());
     commands.spawn(routes::hud_route::HudRoute);
 }

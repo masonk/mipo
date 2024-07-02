@@ -1,3 +1,4 @@
+use bevy::sprite::{Anchor, MaterialMesh2dBundle, Mesh2dHandle};
 use bevy::{
     math::vec3,
     prelude::*,
@@ -5,6 +6,7 @@ use bevy::{
         Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
     },
 };
+
 use bevy_lunex::prelude::*;
 use smooth_bevy_cameras::controllers::unreal::{UnrealCameraBundle, UnrealCameraController};
 
@@ -24,13 +26,17 @@ impl Plugin for HudRoutePlugin {
 fn build_route(
     mut commands: Commands,
     query: Query<Entity, Added<HudRoute>>,
+    // window: Query<&Window>,
     asset_server: Res<AssetServer>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     for route_entity in &query {
         // #======================#
         // #=== USER INTERFACE ===#
 
-        info!("Spawning Hud route");
+        info!("Spawning Hud Route");
+        // let window = window.single();
         // Spawn the route
         commands
             .entity(route_entity)
@@ -38,6 +44,8 @@ fn build_route(
             .with_children(|route| {
                 // Render 3D camera onto a texture
                 let size = Extent3d {
+                    // height: window.resolution.height() as u32,
+                    // width: window.resolution.width() as u32,
                     width: 1920,
                     height: 1080,
                     ..default()
@@ -85,7 +93,7 @@ fn build_route(
                         MovableByCamera,
                     ))
                     .with_children(|ui| {
-                        let root = UiLink::<MainUi>::path("Root");
+                        let root = UiLink::<MainUi>::path("Hud");
                         ui.spawn((root.clone(), UiLayout::window_full().pack::<Base>()));
 
                         // Spawn 3D camera view
@@ -98,17 +106,24 @@ fn build_route(
                             UiImage2dBundle::from(render_image),
                             Pickable::IGNORE,
                         ));
-
-                        // Spawn panel
+                        let text = "Spinner";
+                        // Spawn spinner button
                         ui.spawn((
-                            root.add("Return"),
-                            UiLayout::window()
-                                .pos(Rl((2.0, 4.0)))
-                                .size(Rl((16.0, 8.0)))
-                                .pack::<Base>(),
-                            crate::components::ui::button::Button {
-                                text: "MY BUTTON!".into(),
+                            root.add(text),
+                            MaterialMesh2dBundle {
+                                mesh: Mesh2dHandle(meshes.add(Rectangle {
+                                    half_size: Vec2::splat(50.0),
+                                })),
+                                material: materials.add(Color::srgb(1.0, 0.5, 0.5)),
+                                ..default()
                             },
+                            Element,
+                            Dimension::default(),
+                            UiLayout::window()
+                                .pos((Rl(100.) - Ab(90.), Ab(10.0)))
+                                .size(Ab((80.0, 25.)))
+                                .pack::<Base>(),
+                            crate::components::ui::button::Button { text: text.into() },
                         ));
                     });
             });

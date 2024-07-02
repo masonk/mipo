@@ -1,6 +1,7 @@
 use crate::*;
-use bevy::sprite::Anchor;
+use bevy::sprite::{Anchor, MaterialMesh2dBundle, Mesh2dHandle};
 use bevy_lunex::prelude::*;
+use palette::Palette;
 
 // #=========================#
 // #=== EXPOSED COMPONENT ===#
@@ -11,15 +12,17 @@ pub struct Button {
     pub text: String,
 }
 
-// #===============================#
-// #=== SANDBOXED USER INTEFACE ===#
-
 /// Marker struct for the sandboxed UI
 #[derive(Component, Debug, Default, Clone, PartialEq)]
 struct ButtonUi;
 
 /// System that builds the component UI
-fn build_component(mut commands: Commands, query: Query<(Entity, &Button), Added<Button>>) {
+fn build_component(
+    mut commands: Commands,
+    query: Query<(Entity, &Button), Added<Button>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
     for (entity, button_source) in &query {
         // This will create a private sandboxed UiTree within the entity just for the button
         commands
@@ -27,36 +30,17 @@ fn build_component(mut commands: Commands, query: Query<(Entity, &Button), Added
             .insert(UiTreeBundle::<ButtonUi>::from(UiTree::new("Button")))
             .with_children(|ui| {
                 info!("Spawning a button with text: {}", button_source.text);
-                // Spawn button image
-                let image = ui
-                    .spawn((
-                        // Link this widget
-                        UiLink::<ButtonUi>::path("Control/Image"),
-                        // Add layout
-                        UiLayout::window_full().pack::<Base>(),
-                        // Give it a background image
-                        // UiImage2dBundle::from(assets.button_symetric.clone()),
-                        // Make the background scalable
-                        ImageScaleMode::Sliced(TextureSlicer {
-                            border: BorderRect::square(32.0),
-                            ..default()
-                        }),
-                        // Make it non-obsructable for hit checking (mouse detection)
-                        Pickable::IGNORE,
-                        // This is required to control our hover animation
-                        UiAnimator::<Hover>::new().receiver(true),
-                    ))
-                    .id();
+                let sandbox_root = UiLink::<ButtonUi>::path("Control");
 
                 // Spawn button text
                 let text = ui
                     .spawn((
                         // Link this widget
-                        UiLink::<ButtonUi>::path("Control/Image/Text"),
+                        sandbox_root.add("Text"),
                         // Here we can define where we want to position our text within the parent node,
                         // don't worry about size, that is picked up and overwritten automaticaly by Lunex to match text size.
                         UiLayout::window()
-                            .pos(Rl((50., 50.)))
+                            .pos(Rl((0., 0.)))
                             .anchor(Anchor::Center)
                             .pack::<Base>(),
                         // Add text
@@ -77,26 +61,16 @@ fn build_component(mut commands: Commands, query: Query<(Entity, &Button), Added
                         UiAnimator::<Hover>::new().receiver(true),
                         // This will set the color to red
                         // UiColor::<Base>::new(Color::BEVYPUNK_RED),
-                        UiColor::<Base>::new(Color::srgba(
-                            255. / 255.,
-                            98. / 255.,
-                            81. / 255.,
-                            1.0,
-                        )),
+                        UiColor::<Base>::new(Palette::Red.into()),
                         // // This will set hover color to yellow
-                        UiColor::<Hover>::new(Color::srgba(
-                            252. / 255.,
-                            226. / 255.,
-                            8. / 255.,
-                            1.0,
-                        )),
+                        UiColor::<Hover>::new(Palette::Yellow.into()),
                     ))
                     .id();
 
                 // Spawn button hover-zone
                 ui.spawn((
                     // Link this widget
-                    UiLink::<ButtonUi>::path("Control"),
+                    sandbox_root,
                     // Add layout
                     UiLayout::window_full().pack::<Base>(),
                     // Make this spacial & clickable entity
@@ -106,7 +80,7 @@ fn build_component(mut commands: Commands, query: Query<(Entity, &Button), Added
                         .forward_speed(5.0)
                         .backward_speed(1.0),
                     // This will pipe this hover data to the specified entities
-                    UiAnimatorPipe::<Hover>::new(vec![text, image]),
+                    UiAnimatorPipe::<Hover>::new(vec![text]),
                     // This will change cursor icon on mouse hover
                     OnHoverSetCursor::new(CursorIcon::Pointer),
                     // If we click on this hover zone, it will emmit UiClick event from parent entity

@@ -1,4 +1,7 @@
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
+};
 use bevy_lunex::prelude::*;
 
 #[derive(Component, Debug, Default, Clone, PartialEq)]
@@ -22,6 +25,8 @@ fn build_route(
     // assets: Res<AssetCache>,
     main: Query<Entity, With<MainUi>>,
     query: Query<Entity, Added<SpinnerConfigRoute>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     for route_entity in &query {
         // Spawn the route
@@ -36,7 +41,7 @@ fn build_route(
                         MovableByCamera,
                     ))
                     .with_children(|ui| {
-                        let root = UiLink::<MainUi>::path("Root"); // Here we can define the name of the node
+                        let root = UiLink::<MainUi>::path("SpinnerConfig"); // Here we can define the name of the node
                         ui.spawn((
                             root.clone(),                           // Here we add the link
                             UiLayout::window_full().pack::<Base>(), // This is where we define layout
