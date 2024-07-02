@@ -75,6 +75,7 @@ fn spawn_camera(
                     },
                     sprite: Sprite {
                         color: Palette::Yellow.into(),
+
                         anchor: Anchor::TopLeft,
                         ..default()
                     },

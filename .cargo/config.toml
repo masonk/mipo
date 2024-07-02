@@ -8,6 +8,23 @@
 
 # https://bevyengine.org/learn/quick-start/getting-started/setup/#build-bevy
 # https://github.com/bevyengine/bevy/blob/latest/.cargo/config_fast_builds.toml
+[env]
+BEVY_ASSET_ROOT="C:\\Users\\mason\\dev\\mipo"
+
+[build]
+# target = "x86_64-pc-windows-gnu"
+
+# cross compilation for windows from WSL2
+# rustflags = ["-C", "link-arg=-fuse-ld=/usr/bin/mold"]
+# All the packages I needed to install on WSL2 to get this compiling:
+# sudo apt-get install mingw-w64 clang lld mold x86_64-w64-mingw32-gcc mingw-w64-x86-64-dev
+[target.x86_64-pc-windows-gnu]
+# linker = "clang"
+# rustflags = [
+#   "-Clink-arg=-fuse-ld=lld", # Use LLD Linker
+#   "-Zshare-generics=y",      # (Nightly) Make the current crate share its generic instantiations
+#   "-Zthreads=0",             # (Nightly) Use improved multithreading with the recommended amount of threads.
+# ]
 
 [target.x86_64-unknown-linux-gnu]
 linker = "clang"

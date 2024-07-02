@@ -7,8 +7,10 @@ default-run = "main"
 [alias]
 r = "run assets/grand_canyon_small_heightmap.png"
 
+
 [dependencies]
 anyhow = "1.0.86"
+# bevy = { version = "0.14.0-rc.4" }
 bevy = { version = "0.14.0-rc.4", features = ["dynamic_linking"] }
 bevy-inspector-egui = {  path = "../bevy-inspector-egui/crates/bevy-inspector-egui" }
 bevy_log = "0.14.0-rc.3"

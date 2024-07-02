@@ -94,7 +94,7 @@ fn build_route(
                     ))
                     .with_children(|ui| {
                         let root = UiLink::<MainUi>::path("Hud");
-                        ui.spawn((root.clone(), UiLayout::window_full().pack::<Base>()));
+                        // ui.spawn((root.clone(), UiLayout::window_full().pack::<Base>()));
 
                         // Spawn 3D camera view
                         ui.spawn((

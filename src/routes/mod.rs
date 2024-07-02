@@ -5,7 +5,7 @@ use bevy::prelude::*;
 pub struct RoutesPlugin;
 impl Plugin for RoutesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(spinner_config::SpinnerConfigRoutePlugin);
+        // app.add_plugins(spinner_config::SpinnerConfigRoutePlugin);
         app.add_plugins(hud_route::HudRoutePlugin);
     }
 }
