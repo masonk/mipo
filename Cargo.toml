@@ -12,7 +12,7 @@ r = "run assets/grand_canyon_small_heightmap.png"
 anyhow = "1.0.86"
 # bevy = { version = "0.14.0-rc.4" }
 bevy = { version = "0.14.0-rc.4", features = ["dynamic_linking"] }
-bevy-inspector-egui = {  path = "../bevy-inspector-egui/crates/bevy-inspector-egui" }
+# bevy-inspector-egui = {  path = "../bevy-inspector-egui/crates/bevy-inspector-egui" }
 bevy_log = "0.14.0-rc.3"
 bevy_lunex = { git = "https://github.com/bytestring-net/bevy_lunex", features=["debug"] }
 bevy_rapier3d = { version = "0.27.0-rc.1",  features = [ "simd-stable", "debug-render-3d" ] }
@@ -57,5 +57,5 @@ opt-level =  3
 lto = "thin"
 
 [patch.crates-io]
-smooth-bevy-cameras = { path = "../smooth-bevy-cameras" }
-bevy_stl = { path = "../bevy_stl" }
+smooth-bevy-cameras = { git = "https://github.com/masonk/smooth-bevy-cameras.git" }
+bevy_stl = { git = "https://github.com/masonk/bevy_stl.git" }

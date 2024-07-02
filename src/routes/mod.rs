@@ -1,5 +1,4 @@
 pub mod hud_route;
-pub mod spinner_config;
 use bevy::prelude::*;
 
 pub struct RoutesPlugin;

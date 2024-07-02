@@ -29,7 +29,7 @@ mod rtin;
 mod world;
 
 use bevy::log::LogPlugin;
-use bevy_inspector_egui;
+// use bevy_inspector_egui;
 use bevy_lunex;
 use bevy_rapier3d::prelude::*;
 use bevy_stl;
@@ -80,7 +80,7 @@ fn main() {
                 terrain_path: "assets/grand_canyon_small_heightmap.png".into(),
             },
             // ThirdPersonCameraPlugin,
-            bevy_inspector_egui::quick::WorldInspectorPlugin::new(),
+            // bevy_inspector_egui::quick::WorldInspectorPlugin::new(),
             bevy_stl::StlPlugin,
             components::ComponentPlugin,
         ))
