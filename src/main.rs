@@ -21,6 +21,7 @@ mod camera;
 mod components;
 mod geometry;
 mod items;
+mod objects;
 mod palette;
 mod physics;
 mod player;
@@ -87,6 +88,7 @@ fn main() {
         .add_plugins(camera::CameraPlugin)
         .add_systems(Startup, startup)
         .add_plugins((
+            objects::TargetsPlugin,
             items::ItemsPlugin,
             routes::RoutesPlugin,
             bevy_lunex::UiPlugin, // diegetic ui system

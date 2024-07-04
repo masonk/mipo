@@ -14,7 +14,8 @@ anyhow = "1.0.86"
 bevy = { version = "0.14.0-rc.4", features = ["dynamic_linking"] }
 # bevy-inspector-egui = {  path = "../bevy-inspector-egui/crates/bevy-inspector-egui" }
 bevy_log = "0.14.0-rc.3"
-bevy_lunex = { git = "https://github.com/bytestring-net/bevy_lunex", features=["debug"] }
+bevy_lunex = { git = "https://github.com/bytestring-net/bevy_lunex" }
+# bevy_lunex = { git = "https://github.com/bytestring-net/bevy_lunex", features=["debug"] }
 bevy_rapier3d = { version = "0.27.0-rc.1",  features = [ "simd-stable", "debug-render-3d" ] }
 bevy_stl = "^0.14.0"
 ciborium = { version = "^0.2.2", optional = true }
@@ -25,6 +26,7 @@ glam = { version = "0.27.0" }
 image = "0.25.1"
 log = "0.4.21"
 num-traits = "0.2.19"
+rand = "0.8.5"
 serde = { version = "^1.0", optional = true,  features = ["derive"] }
 smooth-bevy-cameras = "0.11.0"
 tiff = "0.9.1"

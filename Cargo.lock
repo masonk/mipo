@@ -3066,6 +3066,7 @@ dependencies = [
  "image",
  "log",
  "num-traits",
+ "rand",
  "serde",
  "smooth-bevy-cameras",
  "tiff",

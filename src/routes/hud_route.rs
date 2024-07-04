@@ -10,10 +10,11 @@ use bevy::{
 use bevy_lunex::prelude::*;
 use smooth_bevy_cameras::controllers::unreal::{UnrealCameraBundle, UnrealCameraController};
 
+use crate::camera::Flycam;
+use crate::palette::Palette;
+
 #[derive(Component, Debug, Default, Clone, PartialEq)]
 pub struct HudRoute;
-#[derive(Debug, Clone, Component)]
-pub(crate) struct Flycam;
 
 pub struct HudRoutePlugin;
 
@@ -98,7 +99,7 @@ fn build_route(
 
                         // Spawn 3D camera view
                         ui.spawn((
-                            root.add("Root/3dGameWorldCamera"),
+                            root.add("3dGameWorldCamera"),
                             UiLayout::solid()
                                 .size((1920.0, 1080.0))
                                 .scaling(Scaling::Fill)
@@ -107,20 +108,56 @@ fn build_route(
                             Pickable::IGNORE,
                         ));
                         let text = "Spinner";
+                        const BUTTON_HEIGHT: f32 = 25.;
+                        const BUTTON_SPACING: f32 = 10.;
+                        let mut above = 0.0;
+
                         // Spawn spinner button
                         ui.spawn((
                             root.add(text),
+                            UiDepthBias(50.0),
                             MaterialMesh2dBundle {
                                 mesh: Mesh2dHandle(meshes.add(Rectangle {
                                     half_size: Vec2::splat(50.0),
                                 })),
-                                material: materials.add(Color::srgb(1.0, 0.5, 0.5)),
+                                material: materials.add(Palette::Blue.to_color()),
                                 ..default()
                             },
                             Element,
                             Dimension::default(),
                             UiLayout::window()
-                                .pos((Rl(100.) - Ab(90.), Ab(10.0)))
+                                .pos((
+                                    Rl(100.) - Ab(90.),
+                                    Ab(BUTTON_SPACING + (BUTTON_HEIGHT + BUTTON_SPACING) * above),
+                                ))
+                                .size(Ab((80.0, BUTTON_HEIGHT)))
+                                .pack::<Base>(),
+                            crate::components::ui::button::Button { text: text.into() },
+                        ));
+                        above += 1.0;
+                        let text = "Targets";
+                        // Spawn spinner button
+                        ui.spawn((
+                            root.add("Targets"),
+                            UiDepthBias(50.0),
+                            MaterialMesh2dBundle {
+                                mesh: Mesh2dHandle(meshes.add(Rectangle {
+                                    half_size: Vec2::splat(50.0),
+                                })),
+                                material: materials.add(Palette::Blue.to_color()),
+                                ..default()
+                            },
+                            OnUiClickCommands::new(|commands| {
+                                info!("Spawning targets");
+                                commands.spawn(crate::objects::Targets::default());
+                            }),
+                            Element,
+                            Dimension::default(),
+                            UiLayout::window()
+                                .pos((
+                                    Rl(100.) - Ab(90.),
+                                    Ab(BUTTON_SPACING + (BUTTON_HEIGHT + BUTTON_SPACING) * above),
+                                ))
                                 .size(Ab((80.0, 25.)))
                                 .pack::<Base>(),
                             crate::components::ui::button::Button { text: text.into() },
