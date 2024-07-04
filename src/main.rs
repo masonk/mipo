@@ -6,6 +6,7 @@ use bevy::{
     ecs::schedule::{LogLevel, ScheduleBuildSettings},
     pbr::wireframe::{WireframeConfig, WireframePlugin},
     prelude::*,
+    window::{WindowMode, WindowResolution},
 };
 use clap::Parser;
 use std::path::PathBuf;
@@ -60,13 +61,16 @@ fn main() {
                 .set(WindowPlugin {
                     primary_window: Some(Window {
                         position: WindowPosition::At((0, 0).into()),
-                        resolution: bevy::window::WindowResolution::new(1500., 1420.),
+                        // mode: WindowMode::BorderlessFullscreen,
+                        resolution: WindowResolution::new(1920. * 2.0, 1080.0 * 2.0)
+                            .with_scale_factor_override(1.0),
+                        // resolution: bevy::window::WindowResolution::new(1920., 1080.),
                         // fill the entire browser window
                         // TODO: re-enable in Bevy 0.14
                         // fit_canvas_to_parent: true,
                         // don't hijack keyboard shortcuts like F5, F6, F12, Ctrl+R etc.
-                        fit_canvas_to_parent: true,
-                        prevent_default_event_handling: false,
+                        // fit_canvas_to_parent: true,
+                        // prevent_default_event_handling: false,
                         ..default()
                     }),
                     ..default()

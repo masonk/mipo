@@ -5,6 +5,7 @@ use bevy::{
     render::render_resource::{
         Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
     },
+    window::{PrimaryWindow, WindowResized},
 };
 
 use bevy_lunex::prelude::*;
@@ -18,9 +19,54 @@ pub struct HudRoute;
 
 pub struct HudRoutePlugin;
 
+#[derive(Component)]
+struct GameWorldImage(Handle<Image>);
+
 impl Plugin for HudRoutePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(PreUpdate, build_route.before(UiSystems::Compute));
+        app.add_systems(Update, update_gameworld_viewport);
+    }
+}
+
+fn update_gameworld_viewport(
+    mut images: ResMut<Assets<Image>>,
+    mut resize_reader: EventReader<WindowResized>,
+    mut query: Query<(&mut Projection, &GameWorldImage), With<Flycam>>,
+) {
+    for e in resize_reader.read() {
+        debug!("Window resized. New extent: {}, {}", e.width, e.height);
+        match query.get_single_mut() {
+            Ok((mut projection, GameWorldImage(handle))) => match images.get_mut(handle) {
+                Some(image) => {
+                    let size = Extent3d {
+                        width: e.width as u32,
+                        height: e.height as u32,
+                        ..default()
+                    };
+                    image.resize(size);
+
+                    let projection = projection.as_mut();
+                    match projection {
+                        Projection::Perspective(perspective) => {
+                            let prev = perspective.aspect_ratio;
+                            perspective.aspect_ratio = e.width / e.height;
+                            info!(
+                                "Updating 3d Game World aspect ration from {prev} to {}",
+                                perspective.aspect_ratio
+                            );
+                        }
+                        Projection::Orthographic(_ortho) => {}
+                    }
+                }
+                _ => {
+                    warn!("Unable to access game world texture to resize it.")
+                }
+            },
+            _ => {
+                warn!("No GameWorldImage to resize.")
+            }
+        };
     }
 }
 
@@ -31,7 +77,10 @@ fn build_route(
     asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    windows: Query<&Window, With<PrimaryWindow>>,
 ) {
+    let window = windows.single();
+
     for route_entity in &query {
         // #======================#
         // #=== USER INTERFACE ===#
@@ -45,10 +94,8 @@ fn build_route(
             .with_children(|route| {
                 // Render 3D camera onto a texture
                 let size = Extent3d {
-                    // height: window.resolution.height() as u32,
-                    // width: window.resolution.width() as u32,
-                    width: 1920,
-                    height: 1080,
+                    width: window.width() as u32,
+                    height: window.height() as u32,
                     ..default()
                 };
                 let mut image = Image {
@@ -72,14 +119,23 @@ fn build_route(
                 info!("Spawning 3d camera");
                 route
                     .spawn(Camera3dBundle {
+                        projection: PerspectiveProjection {
+                            // We must specify the FOV in radians.
+                            // Rust can convert degrees to radians for us.
+                            fov: 60.0_f32.to_radians(),
+                            ..default()
+                        }
+                        .into(),
                         camera: Camera {
                             is_active: true,
-                            clear_color: ClearColorConfig::Custom(Color::srgba(0.2, 0.4, 0.2, 1.0)),
+                            clear_color: ClearColorConfig::Custom(Color::srgba(0.2, 0.2, 0.2, 1.0)),
                             target: render_image.clone().into(),
+
                             ..default()
                         },
                         ..default()
                     })
+                    .insert(GameWorldImage(render_image.clone()))
                     .insert(Flycam)
                     .insert(UnrealCameraBundle::new(
                         flycam_controller(),

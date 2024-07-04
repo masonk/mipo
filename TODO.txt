@@ -1,4 +1,11 @@
 SPawn a bad guy and shoot it.
-- Button to spawn targets
-- Hit scanning to detect a target Hit
-- respawn in a random place within a cube
+- [DONE] Button to spawn targets
+- [DONE] Hit scanning to detect a target Hit
+- On hit:
+    - respawn in a random place within a cube
+- Switch to keyboard based input
+- Draw a ray to target? Like a laser?
+- Button to clear targets
+- Figure out why the game looks ugly and low-res.
+- implement brownian motion for targets
+- Get First Person mode back

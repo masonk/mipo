@@ -61,8 +61,8 @@ fn load_targets(
         base_color_texture: Some(images.add(uv_debug_texture())),
         ..default()
     });
-    let cube = meshes.add(Cuboid::from_size(Vec3::splat(2.0)));
-    let collider = Collider::cuboid(2.0, 2.0, 2.0);
+    let cube = meshes.add(Sphere::new(1.0));
+    let collider = Collider::ball(1.0);
     let mut rng = rand::thread_rng();
 
     for (entity_id, targets) in &query {
@@ -77,17 +77,19 @@ fn load_targets(
 
         entity.insert((
             Name::new(targets.name.clone()),
-            PbrBundle {
-                transform: Transform::from_translation(position),
-                mesh: boundary_cube,
-                material: materials.add(StandardMaterial {
-                    base_color,
-                    alpha_mode: AlphaMode::Blend,
-                    ..default()
-                }),
-                ..default()
-            },
+            SpatialBundle::from_transform(Transform::from_translation(position)), // Transform::from_translation(position),
         ));
+        // This spawns a transparent boundary cube to show the volume where targets can possibly spawn.
+        // .insert(PbrBundle {
+        //     transform: Transform::from_translation(position),
+        //     mesh: boundary_cube,
+        //     material: materials.add(StandardMaterial {
+        //         base_color,
+        //         alpha_mode: AlphaMode::Blend,
+        //         ..default()
+        //     }),
+        //     ..default()
+        // });
         entity.with_children(|children| {
             for i in 0..targets.number {
                 let translation: Vec3 = (
@@ -100,6 +102,7 @@ fn load_targets(
                     Target::from_rotations(translation.clone()),
                     Name::new(format!("target{i}")),
                     RigidBody::Dynamic,
+                    GravityScale(0.0),
                     collider.clone(),
                     PbrBundle {
                         transform: Transform::from_translation(translation),
@@ -199,7 +202,6 @@ pub fn cast_ray(
                 alpha_mode: AlphaMode::Blend,
                 ..default()
             });
-            info!("Hit something with raycast.");
 
             commands.entity(entity).insert(highlight);
         }
