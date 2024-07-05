@@ -1,3 +1,4 @@
+use bevy::render::view;
 use bevy::sprite::{Anchor, MaterialMesh2dBundle, Mesh2dHandle};
 use bevy::{
     math::vec3,
@@ -32,42 +33,71 @@ impl Plugin for HudRoutePlugin {
 fn update_gameworld_viewport(
     mut images: ResMut<Assets<Image>>,
     mut resize_reader: EventReader<WindowResized>,
-    mut query: Query<(&mut Projection, &GameWorldImage), With<Flycam>>,
+    mut query: Query<(&mut GameWorldImage, &mut Camera), With<Flycam>>,
 ) {
     for e in resize_reader.read() {
         debug!("Window resized. New extent: {}, {}", e.width, e.height);
         match query.get_single_mut() {
-            Ok((mut projection, GameWorldImage(handle))) => match images.get_mut(handle) {
-                Some(image) => {
+            Ok((game_world_image, camera)) => {
+                // if let Some(_image) = images.get_mut(game_world_image.0.id()) {}
+                if let Some(image) = images.get_mut(game_world_image.0.id()) {
                     let size = Extent3d {
                         width: e.width as u32,
                         height: e.height as u32,
                         ..default()
                     };
+                    image.texture_descriptor.size = size;
                     image.resize(size);
+                }
 
-                    let projection = projection.as_mut();
-                    match projection {
-                        Projection::Perspective(perspective) => {
-                            let prev = perspective.aspect_ratio;
-                            perspective.aspect_ratio = e.width / e.height;
-                            info!(
-                                "Updating 3d Game World aspect ration from {prev} to {}",
-                                perspective.aspect_ratio
-                            );
-                        }
-                        Projection::Orthographic(_ortho) => {}
-                    }
-                }
-                _ => {
-                    warn!("Unable to access game world texture to resize it.")
-                }
-            },
+                // if let Some(ref mut viewport) = camera.viewport {
+                //     viewport.physical_size.x = e.width as u32;
+                //     viewport.physical_size.y = e.height as u32;
+                // }
+
+                // let projection = projection.as_mut();
+                // match projection {
+                //     Projection::Perspective(perspective) => {
+                //         let prev = perspective.aspect_ratio;
+                //         perspective.aspect_ratio = e.width / e.height;
+                //         info!(
+                //             "Updating 3d Game World aspect ration from {prev} to {}",
+                //             perspective.aspect_ratio
+                //         );
+                //     }
+                //     Projection::Orthographic(_ortho) => {}
+                // }
+            }
             _ => {
-                warn!("No GameWorldImage to resize.")
+                warn!("No GameWorldImage to resize. Raycasting into the 3d game world probably doesn't work.")
             }
         };
     }
+}
+
+fn camera_image(width: u32, height: u32) -> Image {
+    let size = Extent3d {
+        width,
+        height,
+        ..default()
+    };
+    let mut image = Image {
+        texture_descriptor: TextureDescriptor {
+            label: None,
+            size,
+            dimension: TextureDimension::D2,
+            format: TextureFormat::Bgra8UnormSrgb,
+            mip_level_count: 1,
+            sample_count: 1,
+            usage: TextureUsages::TEXTURE_BINDING
+                | TextureUsages::COPY_DST
+                | TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
+        },
+        ..default()
+    };
+    image.resize(size);
+    image
 }
 
 fn build_route(
@@ -92,29 +122,8 @@ fn build_route(
             .entity(route_entity)
             .insert(SpatialBundle::default())
             .with_children(|route| {
-                // Render 3D camera onto a texture
-                let size = Extent3d {
-                    width: window.width() as u32,
-                    height: window.height() as u32,
-                    ..default()
-                };
-                let mut image = Image {
-                    texture_descriptor: TextureDescriptor {
-                        label: None,
-                        size,
-                        dimension: TextureDimension::D2,
-                        format: TextureFormat::Bgra8UnormSrgb,
-                        mip_level_count: 1,
-                        sample_count: 1,
-                        usage: TextureUsages::TEXTURE_BINDING
-                            | TextureUsages::COPY_DST
-                            | TextureUsages::RENDER_ATTACHMENT,
-                        view_formats: &[],
-                    },
-                    ..default()
-                };
-                image.resize(size);
-                let render_image = asset_server.add(image);
+                let render_image =
+                    asset_server.add(camera_image(window.width() as u32, window.height() as u32));
 
                 info!("Spawning 3d camera");
                 route
@@ -122,27 +131,22 @@ fn build_route(
                         projection: PerspectiveProjection {
                             // We must specify the FOV in radians.
                             // Rust can convert degrees to radians for us.
-                            fov: 60.0_f32.to_radians(),
+                            fov: 50.0_f32.to_radians(),
                             ..default()
                         }
                         .into(),
+                        transform: Transform::from_translation(vec3(-154.44, 204.027, -111.268))
+                            .looking_at(vec3(150., 20.0, 150.0), Vec3::Y),
                         camera: Camera {
                             is_active: true,
                             clear_color: ClearColorConfig::Custom(Color::srgba(0.2, 0.2, 0.2, 1.0)),
                             target: render_image.clone().into(),
-
                             ..default()
                         },
                         ..default()
                     })
                     .insert(GameWorldImage(render_image.clone()))
-                    .insert(Flycam)
-                    .insert(UnrealCameraBundle::new(
-                        flycam_controller(),
-                        vec3(-154.44, 204.027, -111.268),
-                        vec3(150., 20.0, 150.0),
-                        Vec3::Y,
-                    ));
+                    .insert(Flycam);
 
                 route
                     .spawn((

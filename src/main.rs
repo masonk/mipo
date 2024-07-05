@@ -62,7 +62,7 @@ fn main() {
                     primary_window: Some(Window {
                         position: WindowPosition::At((0, 0).into()),
                         // mode: WindowMode::BorderlessFullscreen,
-                        resolution: WindowResolution::new(1920. * 2.0, 1080.0 * 2.0)
+                        resolution: WindowResolution::new(1920. * 1.8, 1080.0 * 1.8)
                             .with_scale_factor_override(1.0),
                         // resolution: bevy::window::WindowResolution::new(1920., 1080.),
                         // fill the entire browser window

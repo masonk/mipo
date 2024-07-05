@@ -44,7 +44,7 @@ pub struct TargetsPlugin;
 impl Plugin for TargetsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(PreUpdate, load_targets);
-        app.add_systems(Update, (rotate, cast_ray));
+        app.add_systems(Update, (cast_ray));
 
         // app.add_systems(PreUpdate, despawn_targets);
     }
@@ -177,14 +177,15 @@ pub fn cast_ray(
         return;
     };
 
-    // We will color in read the colliders hovered by the mouse.
+    // We will color in red the colliders hovered by the mouse.
     for (camera, camera_transform) in &cameras {
         // First, compute a ray from the mouse position.
         let Some(ray) = camera.viewport_to_world(camera_transform, cursor_position) else {
             return;
         };
 
-        // Then cast the ray.
+        // Because of the query filter, only colliders attached to a dynamic body
+        // will get an event.
         let hit = rapier_context.cast_ray(
             ray.origin,
             ray.direction.into(),
@@ -194,9 +195,6 @@ pub fn cast_ray(
         );
 
         if let Some((entity, _toi)) = hit {
-            // Color in blue the entity we just hit.
-            // Because of the query filter, only colliders attached to a dynamic body
-            // will get an event.
             let highlight = materials.add(StandardMaterial {
                 base_color: Palette::Red.to_color().into(),
                 alpha_mode: AlphaMode::Blend,

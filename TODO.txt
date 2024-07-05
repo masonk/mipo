@@ -9,3 +9,6 @@ SPawn a bad guy and shoot it.
 - Figure out why the game looks ugly and low-res.
 - implement brownian motion for targets
 - Get First Person mode back
+- Figure out why resizing causes hitscanning to screw up. 
+    - Figure out better behavior with camera when resizes happen.
+    - Don't let the game world become stretched.
