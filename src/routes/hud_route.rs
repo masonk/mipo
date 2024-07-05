@@ -1,6 +1,6 @@
-use bevy::render::view;
 use bevy::sprite::{Anchor, MaterialMesh2dBundle, Mesh2dHandle};
 use bevy::{
+    asset::AssetEvent,
     math::vec3,
     prelude::*,
     render::render_resource::{
@@ -31,24 +31,57 @@ impl Plugin for HudRoutePlugin {
 }
 
 fn update_gameworld_viewport(
+    mut commands: Commands,
+    mut asset_events: EventWriter<AssetEvent<Image>>,
     mut images: ResMut<Assets<Image>>,
+
     mut resize_reader: EventReader<WindowResized>,
-    mut query: Query<(&mut GameWorldImage, &mut Camera), With<Flycam>>,
+    hud_route: Query<(Entity), With<HudRoute>>,
+    window: Query<&Window, With<PrimaryWindow>>,
+    mut query: Query<(Entity, &mut GameWorldImage), Without<HudRoute>>,
 ) {
+    let hud_entity = match hud_route.get_single() {
+        Ok(h) => h,
+        Err(e) => return, // just means we're not in the hud route.
+    };
+
+    let window = match window.get_single() {
+        Ok(w) => w,
+        Err(e) => {
+            warn!(
+                "Couldn't find primary window in Hud route, this is surely a bug: {:?}",
+                e
+            );
+            return;
+        }
+    };
+
     for e in resize_reader.read() {
         debug!("Window resized. New extent: {}, {}", e.width, e.height);
+
         match query.get_single_mut() {
-            Ok((game_world_image, camera)) => {
-                // if let Some(_image) = images.get_mut(game_world_image.0.id()) {}
-                if let Some(image) = images.get_mut(game_world_image.0.id()) {
-                    let size = Extent3d {
-                        width: e.width as u32,
-                        height: e.height as u32,
-                        ..default()
-                    };
-                    image.texture_descriptor.size = size;
-                    image.resize(size);
-                }
+            Ok((entity, mut game_world_image)) => {
+                // debug!("Camera: {:?}", camera);
+
+                // commands.entity(entity).insert(
+                //     UiLayout::solid()
+                //         .size((e.width, e.height))
+                //         .scaling(Scaling::Fill)
+                //         .pack::<Base>(),
+                // );
+
+                asset_events.send(AssetEvent::Modified {
+                    id: game_world_image.0.id(),
+                });
+
+                // Necessary to get hitscanning to work, for some weird reason.
+                let image = images.get_mut(game_world_image.0.id()).unwrap();
+                let size = Extent3d {
+                    width: e.width as u32,
+                    height: e.height as u32,
+                    ..default()
+                };
+                image.resize(size);
 
                 // if let Some(ref mut viewport) = camera.viewport {
                 //     viewport.physical_size.x = e.width as u32;
@@ -57,7 +90,7 @@ fn update_gameworld_viewport(
 
                 // let projection = projection.as_mut();
                 // match projection {
-                //     Projection::Perspective(perspective) => {
+                //     Projection::Perspective(ref mut perspective) => {
                 //         let prev = perspective.aspect_ratio;
                 //         perspective.aspect_ratio = e.width / e.height;
                 //         info!(
@@ -100,20 +133,44 @@ fn camera_image(width: u32, height: u32) -> Image {
     image
 }
 
+fn camera_bundle(target: Handle<Image>) -> Camera3dBundle {
+    Camera3dBundle {
+        projection: PerspectiveProjection {
+            // We must specify the FOV in radians.
+            // Rust can convert degrees to radians for us.
+            fov: 50.0_f32.to_radians(),
+            ..default()
+        }
+        .into(),
+        transform: Transform::from_translation(vec3(-154.44, 204.027, -111.268))
+            .looking_at(vec3(150., 20.0, 150.0), Vec3::Y),
+        camera: Camera {
+            is_active: true,
+            clear_color: ClearColorConfig::Custom(Color::srgba(0.2, 0.2, 0.2, 1.0)),
+            target: target.into(),
+            ..default()
+        },
+        ..default()
+    }
+}
+
 fn build_route(
     mut commands: Commands,
     query: Query<Entity, Added<HudRoute>>,
     // window: Query<&Window>,
-    asset_server: Res<AssetServer>,
+    mut asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     windows: Query<&Window, With<PrimaryWindow>>,
+    mut image_events: EventWriter<AssetEvent<Image>>,
 ) {
     let window = windows.single();
 
     for route_entity in &query {
         // #======================#
         // #=== USER INTERFACE ===#
+        let render_image =
+            asset_server.add(camera_image(window.width() as u32, window.height() as u32));
 
         info!("Spawning Hud Route");
         // let window = window.single();
@@ -122,31 +179,10 @@ fn build_route(
             .entity(route_entity)
             .insert(SpatialBundle::default())
             .with_children(|route| {
-                let render_image =
-                    asset_server.add(camera_image(window.width() as u32, window.height() as u32));
-
-                info!("Spawning 3d camera");
                 route
-                    .spawn(Camera3dBundle {
-                        projection: PerspectiveProjection {
-                            // We must specify the FOV in radians.
-                            // Rust can convert degrees to radians for us.
-                            fov: 50.0_f32.to_radians(),
-                            ..default()
-                        }
-                        .into(),
-                        transform: Transform::from_translation(vec3(-154.44, 204.027, -111.268))
-                            .looking_at(vec3(150., 20.0, 150.0), Vec3::Y),
-                        camera: Camera {
-                            is_active: true,
-                            clear_color: ClearColorConfig::Custom(Color::srgba(0.2, 0.2, 0.2, 1.0)),
-                            target: render_image.clone().into(),
-                            ..default()
-                        },
-                        ..default()
-                    })
-                    .insert(GameWorldImage(render_image.clone()))
-                    .insert(Flycam);
+                    .spawn(camera_bundle(render_image.clone()))
+                    .insert(Flycam)
+                    .insert(flycam_controller());
 
                 route
                     .spawn((
@@ -161,9 +197,10 @@ fn build_route(
                         ui.spawn((
                             root.add("3dGameWorldCamera"),
                             UiLayout::solid()
-                                .size((1920.0, 1080.0))
-                                .scaling(Scaling::Fill)
+                                .size((window.width(), window.height()))
+                                .scaling(Scaling::VerFill)
                                 .pack::<Base>(),
+                            GameWorldImage(render_image.clone()),
                             UiImage2dBundle::from(render_image),
                             Pickable::IGNORE,
                         ));

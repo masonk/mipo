@@ -89,6 +89,10 @@ fn main() {
             bevy_stl::StlPlugin,
             components::ComponentPlugin,
         ))
+        // .add_system_to_stage(
+        //     CoreStage::PostUpdate,
+        //     Assets::<Image>::asset_event_system.before(CameraUpdateSystem),
+        // )
         .add_plugins(camera::CameraPlugin)
         .add_systems(Startup, startup)
         .add_plugins((
