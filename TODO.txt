@@ -14,7 +14,7 @@ SPawn a bad guy and shoot it.
     - Answer: registering a Cursor2d with native: false ignores the cursor captivity settings
 - On hit:
     - respawn in a random place within a cube
-- Switch to keyboard based input for the hitscan
+- [DONE] Switch to keyboard based input for the hitscan
 - Draw a ray to target? Like a laser?
 - Button to clear targets
 - implement brownian motion for targets

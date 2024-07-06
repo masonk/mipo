@@ -17,6 +17,7 @@ struct Args {
     terrain: PathBuf,
 }
 
+mod asset_cache;
 mod bevy_rtin;
 mod camera;
 mod components;
@@ -78,7 +79,9 @@ fn main() {
                         ..default()
                     }),
                     ..default()
-                }),
+                })
+                .set(ImagePlugin::default_nearest()), // prevents blurry sprites
+            asset_cache::AssetCachePlugin,
             bevy_rapier3d::plugin::RapierPhysicsPlugin::<NoUserData>::default(),
             bevy_rapier3d::render::RapierDebugRenderPlugin::default().disabled(),
             player::PlayerPlugin,

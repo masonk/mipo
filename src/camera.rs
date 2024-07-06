@@ -23,8 +23,17 @@ fn spawn_camera(
     asset_server: Res<AssetServer>,
     mut atlas_layout: ResMut<Assets<TextureAtlasLayout>>,
 ) {
+    use crate::asset_cache::AssetCache;
     use bevy::core_pipeline::bloom::BloomSettings;
-    let recticle = asset_server.load("crosshairs\\PNG\\White\\crosshair094.png");
+    let crosshairs: Handle<Image> = asset_server.load(AssetCache::CROSSHAIRS_SHEET);
+    let texture_atlas_layout = atlas_layout.add(TextureAtlasLayout::from_grid(
+        UVec2::splat(128),
+        20,
+        10,
+        Some(UVec2::splat(10)),
+        None,
+    ));
+
     commands
         .spawn((
             MainUi,
@@ -57,18 +66,8 @@ fn spawn_camera(
                 // .register_cursor(CursorIcon::Pointer, 1, (10.0, 12.0))
                 // .register_cursor(CursorIcon::Grab, 2, (40.0, 40.0)),
                 // Add texture atlas to the cursor
-                TextureAtlas {
-                    layout: atlas_layout.add(TextureAtlasLayout::from_grid(
-                        UVec2::splat(80),
-                        3,
-                        1,
-                        None,
-                        None,
-                    )),
-                    index: 0,
-                },
                 SpriteBundle {
-                    texture: recticle,
+                    texture: crosshairs,
                     transform: Transform {
                         scale: Vec3::new(0.45, 0.45, 1.0),
                         ..default()
@@ -79,6 +78,10 @@ fn spawn_camera(
                         ..default()
                     },
                     ..default()
+                },
+                TextureAtlas {
+                    layout: texture_atlas_layout,
+                    index: 51,
                 },
             ));
         });
