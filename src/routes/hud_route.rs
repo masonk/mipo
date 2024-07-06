@@ -142,6 +142,7 @@ fn camera_bundle(target: Handle<Image>) -> Camera3dBundle {
             ..default()
         }
         .into(),
+
         transform: Transform::from_translation(vec3(-154.44, 204.027, -111.268))
             .looking_at(vec3(150., 20.0, 150.0), Vec3::Y),
         camera: Camera {
@@ -182,6 +183,12 @@ fn build_route(
                 route
                     .spawn(camera_bundle(render_image.clone()))
                     .insert(Flycam)
+                    .insert(UnrealCameraBundle::new(
+                        flycam_controller(),
+                        vec3(-154.44, 204.027, -111.268),
+                        vec3(150., 20.0, 150.0),
+                        Vec3::Y,
+                    ))
                     .insert(flycam_controller());
 
                 route
