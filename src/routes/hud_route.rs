@@ -147,6 +147,7 @@ fn camera_bundle(target: Handle<Image>) -> Camera3dBundle {
             .looking_at(vec3(150., 20.0, 150.0), Vec3::Y),
         camera: Camera {
             is_active: true,
+            order: 1,
             clear_color: ClearColorConfig::Custom(Color::srgba(0.2, 0.2, 0.2, 1.0)),
             target: target.into(),
             ..default()
@@ -158,6 +159,7 @@ fn camera_bundle(target: Handle<Image>) -> Camera3dBundle {
 fn build_route(
     mut commands: Commands,
     query: Query<Entity, Added<HudRoute>>,
+    player: Query<Entity, With<crate::player::Player>>,
     // window: Query<&Window>,
     mut asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -172,6 +174,28 @@ fn build_route(
         // #=== USER INTERFACE ===#
         let render_image =
             asset_server.add(camera_image(window.width() as u32, window.height() as u32));
+
+        info!("Spawning FirstPersonCam");
+        commands.entity(player.single()).with_children(|child| {
+            child.spawn((
+                Camera3dBundle {
+                    projection: Projection::Perspective(PerspectiveProjection {
+                        fov: 50.0_f32.to_radians(),
+                        ..default()
+                    }),
+                    camera: Camera {
+                        is_active: false,
+                        order: 10,
+                        target: render_image.clone().into(),
+                        ..default()
+                    },
+                    transform: Transform::from_xyz(0.0, 0.7, -1.0),
+                    ..default()
+                },
+                Name::new("FirstPersonCamera"),
+                crate::camera::FirstPersonCam,
+            ));
+        });
 
         info!("Spawning Hud Route");
         // let window = window.single();

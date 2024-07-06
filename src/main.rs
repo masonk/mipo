@@ -6,7 +6,7 @@ use bevy::{
     ecs::schedule::{LogLevel, ScheduleBuildSettings},
     pbr::wireframe::{WireframeConfig, WireframePlugin},
     prelude::*,
-    window::{WindowMode, WindowResolution},
+    window::{Cursor, CursorGrabMode, WindowResolution},
 };
 use clap::Parser;
 use std::path::PathBuf;
@@ -61,6 +61,10 @@ fn main() {
                 .set(WindowPlugin {
                     primary_window: Some(Window {
                         position: WindowPosition::At((0, 0).into()),
+                        cursor: Cursor {
+                            grab_mode: CursorGrabMode::Confined,
+                            ..default()
+                        },
                         // mode: WindowMode::BorderlessFullscreen,
                         resolution: WindowResolution::new(1920. * 1.8, 1080.0 * 1.8)
                             .with_scale_factor_override(1.0),

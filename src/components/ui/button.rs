@@ -81,7 +81,7 @@ fn build_component(
                         .backward_speed(1.0),
                     // This will pipe this hover data to the specified entities
                     UiAnimatorPipe::<Hover>::new(vec![text]),
-                    // This will change cursor icon on mouse hover
+                    // // This will change cursor icon on mouse hover
                     OnHoverSetCursor::new(CursorIcon::Pointer),
                     // If we click on this hover zone, it will emmit UiClick event from parent entity
                     UiClickEmitter::new(entity),

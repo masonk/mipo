@@ -1,14 +1,23 @@
 SPawn a bad guy and shoot it.
 - [DONE] Button to spawn targets
 - [DONE] Hit scanning to detect a target Hit
+- [DONE] Figure out why the game looks ugly and low-res.
+- [DONE] Get First Person mode back
+
+- [DONE] Hide cursor in FPS mode.
+    - When you press escape, you see your cursor
+        - Bevy states?
+        - Also bevy states for camera mode?
+- [DONE] Targeting recticle
+
+- Figure out why cursor isn't hidden or confined. Lunex probleM?
 - On hit:
     - respawn in a random place within a cube
-- Switch to keyboard based input
+- Switch to keyboard based input for the hitscan
 - Draw a ray to target? Like a laser?
 - Button to clear targets
-- Figure out why the game looks ugly and low-res.
 - implement brownian motion for targets
-- Get First Person mode back
 - Figure out why resizing causes hitscanning to screw up. 
-    - Figure out better behavior with camera when resizes happen.
     - Don't let the game world become stretched.
+- button for toggling full screen mode
+- 

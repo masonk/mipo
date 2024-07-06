@@ -14,7 +14,7 @@ const JUMP_SPEED: f32 = 20.0;
 const GRAVITY: f32 = -9.81;
 
 #[derive(Component)]
-struct Player;
+pub struct Player;
 
 pub struct PlayerPlugin;
 
@@ -25,7 +25,7 @@ impl Plugin for PlayerPlugin {
             .init_resource::<EnablePlayerControl>()
             .add_systems(Startup, spawn_player)
             .add_systems(PreUpdate, handle_input.after(InputSystem))
-            // .add_systems(Update, player_look)
+            .add_systems(Update, player_look)
             .add_systems(FixedUpdate, player_movement);
     }
 }
@@ -147,7 +147,7 @@ fn player_look(
 
     let mut camera_transform = match camera.get_single_mut() {
         Ok(t) => t,
-        Err(e) => return, // return warn!("Failed to look up player camera transform: {e}"),
+        Err(e) => return warn!("Failed to look up player camera transform: {e}"),
     };
     // we additionally want to rotate the player camera in the y direction but not rotate the player's body
     camera_transform.rotation = Quat::from_axis_angle(Vec3::X, look.y.to_radians());
