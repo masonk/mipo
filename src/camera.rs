@@ -51,11 +51,11 @@ fn spawn_camera(
         ))
         .with_children(|camera| {
             camera.spawn((
-                Cursor2d::new()
-                    // .native_cursor(false)
-                //     .register_cursor(CursorIcon::Default, 0, (14.0, 14.0))
-                //     .register_cursor(CursorIcon::Pointer, 1, (10.0, 12.0))
-                //     .register_cursor(CursorIcon::Grab, 2, (40.0, 40.0)),
+                // Cursor2d::new(),
+                // .native_cursor(false)
+                // .register_cursor(CursorIcon::Default, 0, (14.0, 14.0))
+                // .register_cursor(CursorIcon::Pointer, 1, (10.0, 12.0))
+                // .register_cursor(CursorIcon::Grab, 2, (40.0, 40.0)),
                 // Add texture atlas to the cursor
                 TextureAtlas {
                     layout: atlas_layout.add(TextureAtlasLayout::from_grid(
@@ -74,8 +74,7 @@ fn spawn_camera(
                         ..default()
                     },
                     sprite: Sprite {
-                        color: Palette::Yellow.into(),
-
+                        color: Color::BLACK,
                         anchor: Anchor::Center,
                         ..default()
                     },

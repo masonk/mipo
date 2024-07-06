@@ -1,4 +1,6 @@
 use bevy::{
+    input::common_conditions::*,
+    input::mouse::{MouseButton, MouseButtonInput},
     prelude::*,
     render::{
         render_asset::RenderAssetUsages,
@@ -44,7 +46,7 @@ pub struct TargetsPlugin;
 impl Plugin for TargetsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(PreUpdate, load_targets);
-        app.add_systems(Update, (cast_ray));
+        app.add_systems(Update, cast_ray.run_if(input_pressed(MouseButton::Left)));
 
         // app.add_systems(PreUpdate, despawn_targets);
     }
@@ -170,12 +172,21 @@ pub fn cast_ray(
     cameras: Query<(&Camera, &GlobalTransform), With<Camera3d>>,
     mut material_query: Query<&mut Handle<StandardMaterial>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    // keyboard: Res<ButtonInput<KeyCode>>,
+    // enable: Res<EnablePlayerControl>,
+    // mut movement: ResMut<MovementInput>,
+    // mut look: ResMut<LookInput>,
+    mut mouse: Res<ButtonInput<MouseButton>>,
 ) {
     let window = windows.single();
 
     let Some(cursor_position) = window.cursor_position() else {
         return;
     };
+
+    if !mouse.just_pressed(MouseButton::Left) {
+        return;
+    }
 
     // We will color in red the colliders hovered by the mouse.
     for (camera, camera_transform) in &cameras {

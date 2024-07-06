@@ -10,7 +10,8 @@ SPawn a bad guy and shoot it.
         - Also bevy states for camera mode?
 - [DONE] Targeting recticle
 
-- Figure out why cursor isn't hidden or confined. Lunex probleM?
+- [DONE] Figure out why cursor isn't hidden or confined. Lunex probleM?
+    - Answer: registering a Cursor2d with native: false ignores the cursor captivity settings
 - On hit:
     - respawn in a random place within a cube
 - Switch to keyboard based input for the hitscan
