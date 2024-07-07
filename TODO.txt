@@ -5,13 +5,17 @@ SPawn a bad guy and shoot it.
 - [DONE] Get First Person mode back
 
 - [DONE] Hide cursor in FPS mode.
-    - When you press escape, you see your cursor
-        - Bevy states?
-        - Also bevy states for camera mode?
+
 - [DONE] Targeting recticle
 
 - [DONE] Figure out why cursor isn't hidden or confined. Lunex probleM?
     - Answer: registering a Cursor2d with native: false ignores the cursor captivity settings
+
+---
+- Draw a ray to target? Like a laser?
+- When you press escape, you see your cursor
+    - Bevy states?
+    - Also bevy states for camera mode?
 - On hit:
     - respawn in a random place within a cube
 - [DONE] Switch to keyboard based input for the hitscan

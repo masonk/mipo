@@ -1,8 +1,11 @@
 use bevy::{
-    input::common_conditions::*,
-    input::mouse::{MouseButton, MouseButtonInput},
+    input::{
+        common_conditions::*,
+        mouse::{MouseButton, MouseButtonInput},
+    },
     prelude::*,
     render::{
+        camera,
         render_asset::RenderAssetUsages,
         render_resource::{Extent3d, TextureDimension, TextureFormat},
     },
@@ -10,6 +13,7 @@ use bevy::{
 };
 use bevy_rapier3d::prelude::*;
 
+use crate::camera::FirstPersonCam;
 use crate::palette::Palette;
 use rand::{self, Rng};
 
@@ -165,12 +169,18 @@ fn rotate(mut query: Query<(&Target, &mut Transform), With<Target>>, time: Res<T
     }
 }
 
+pub fn viewport_to_ndc(logical_viewport_size: Vec2, mut screen_coordinates: Vec2) -> Vec2 {
+    // Flip the Y co-ordinate origin from the top to the bottom.
+    screen_coordinates.y = logical_viewport_size.y - screen_coordinates.y;
+    screen_coordinates * 2. / logical_viewport_size - Vec2::ONE
+}
+
 pub fn cast_ray(
     mut commands: Commands,
     windows: Query<&Window, With<PrimaryWindow>>,
     rapier_context: Res<RapierContext>,
-    cameras: Query<(&Camera, &GlobalTransform), With<Camera3d>>,
-    mut material_query: Query<&mut Handle<StandardMaterial>>,
+    cameras: Query<(&Camera, &GlobalTransform, &Transform), With<FirstPersonCam>>,
+    mut gizmos: Gizmos,
     mut materials: ResMut<Assets<StandardMaterial>>,
     // keyboard: Res<ButtonInput<KeyCode>>,
     // enable: Res<EnablePlayerControl>,
@@ -184,16 +194,30 @@ pub fn cast_ray(
         return;
     };
 
-    if !mouse.just_pressed(MouseButton::Left) {
+    if !mouse.pressed(MouseButton::Left) {
         return;
     }
 
     // We will color in red the colliders hovered by the mouse.
-    for (camera, camera_transform) in &cameras {
+    for (camera, camera_global_transform, camera_transform) in &cameras {
         // First, compute a ray from the mouse position.
-        let Some(ray) = camera.viewport_to_world(camera_transform, cursor_position) else {
+        let Some(ray) = camera.viewport_to_world(camera_global_transform, cursor_position) else {
+            warn!("no ray");
             return;
         };
+
+        let logical_viewport_size = match camera.logical_viewport_size() {
+            Some(size) => size,
+            None => return warn!("no viewport"),
+        };
+
+        let mut cursor_ndc = viewport_to_ndc(logical_viewport_size, cursor_position).extend(1.0);
+
+        let near = camera
+            .ndc_to_world(camera_global_transform, camera_transform.translation)
+            .unwrap();
+
+        gizmos.ray(near, ray.get_point(25.0), Palette::Red);
 
         // Because of the query filter, only colliders attached to a dynamic body
         // will get an event.
