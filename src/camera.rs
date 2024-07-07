@@ -63,12 +63,6 @@ fn spawn_camera(
         ))
         .with_children(|camera| {
             camera.spawn((
-                // Cursor2d::new(),
-                // .native_cursor(false)
-                // .register_cursor(CursorIcon::Default, 0, (14.0, 14.0))
-                // .register_cursor(CursorIcon::Pointer, 1, (10.0, 12.0))
-                // .register_cursor(CursorIcon::Grab, 2, (40.0, 40.0)),
-                // Add texture atlas to the cursor
                 SpriteBundle {
                     texture: crosshairs,
                     transform: Transform {
@@ -106,7 +100,14 @@ fn handle_input(
     }
 }
 
-fn enter_in_game(mut windows: Query<&mut Window, With<PrimaryWindow>>) {
+fn enter_in_game(
+    mut windows: Query<&mut Window, With<PrimaryWindow>>,
+    mut fps_cam: Query<&mut Camera, With<FirstPersonCam>>,
+    mut fly_cam: Query<
+        (&mut UnrealCameraController, &mut Camera),
+        (With<Flycam>, Without<FirstPersonCam>),
+    >,
+) {
     let mut window = match windows.get_single_mut() {
         Ok(w) => w,
         Err(e) => {
@@ -118,11 +119,28 @@ fn enter_in_game(mut windows: Query<&mut Window, With<PrimaryWindow>>) {
     window.cursor.grab_mode = CursorGrabMode::Locked;
     let center_x = window.width() / 2.;
     let center_y = window.height() / 2.;
-
     window.set_cursor_position(Some((center_x, center_y).into()));
+    if let Ok(mut fps_cam) = fps_cam.get_single_mut() {
+        fps_cam.is_active = true;
+    } else {
+        warn!("Unable to find FirstPersonCam to activate it.");
+    }
+    if let Ok((mut controller, mut fly_cam)) = fly_cam.get_single_mut() {
+        controller.enabled = false;
+        fly_cam.is_active = false;
+    } else {
+        warn!("Unable to find Flycam to deactivate it.");
+    }
 }
 
-fn enter_dev_mode(mut windows: Query<&mut Window, With<PrimaryWindow>>) {
+fn enter_dev_mode(
+    mut windows: Query<&mut Window, With<PrimaryWindow>>,
+    mut fps_cam: Query<&mut Camera, With<FirstPersonCam>>,
+    mut fly_cam: Query<
+        (&mut UnrealCameraController, &mut Camera),
+        (With<Flycam>, Without<FirstPersonCam>),
+    >,
+) {
     let mut window = match windows.get_single_mut() {
         Ok(w) => w,
         Err(e) => {
@@ -132,4 +150,15 @@ fn enter_dev_mode(mut windows: Query<&mut Window, With<PrimaryWindow>>) {
     info!("Showing cursor in dev mode.");
     window.cursor.visible = true;
     window.cursor.grab_mode = CursorGrabMode::None;
+    if let Ok(mut fps_cam) = fps_cam.get_single_mut() {
+        fps_cam.is_active = false;
+    } else {
+        warn!("Unable to find FirstPersonCam to deactivate it.");
+    }
+    if let Ok((mut controller, mut fly_cam)) = fly_cam.get_single_mut() {
+        controller.enabled = true;
+        fly_cam.is_active = true;
+    } else {
+        warn!("Unable to find Flycam to activate it.");
+    }
 }

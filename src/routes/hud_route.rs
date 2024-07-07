@@ -33,6 +33,12 @@ struct CamerasSet;
 impl Plugin for HudRoutePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(PreUpdate, build_route.before(UiSystems::Compute));
+        app.add_systems(OnEnter(GameState::StartingUp), enter_starting_up);
+        app.add_systems(OnEnter(GameState::InGame), enter_in_game.in_set(CamerasSet));
+        app.add_systems(
+            OnEnter(GameState::DevMode),
+            enter_dev_mode.in_set(CamerasSet),
+        );
         app.add_systems(
             Update,
             update_gameworld_viewport.run_if(in_state(GameState::InGame)),
@@ -40,11 +46,6 @@ impl Plugin for HudRoutePlugin {
         app.add_systems(
             Update,
             update_gameworld_viewport.run_if(in_state(GameState::DevMode)),
-        );
-        app.add_systems(OnEnter(GameState::InGame), spawn_fps_cam.in_set(CamerasSet));
-        app.add_systems(
-            OnEnter(GameState::DevMode),
-            spawn_dev_cam.in_set(CamerasSet),
         );
     }
 }
@@ -141,54 +142,26 @@ fn camera_image(width: u32, height: u32) -> Image {
     image
 }
 
-fn camera_bundle(target: Handle<Image>) -> Camera3dBundle {
-    Camera3dBundle {
-        projection: PerspectiveProjection {
-            // We must specify the FOV in radians.
-            // Rust can convert degrees to radians for us.
-            fov: 50.0_f32.to_radians(),
-            ..default()
-        }
-        .into(),
-
-        transform: Transform::from_translation(vec3(-154.44, 204.027, -111.268))
-            .looking_at(vec3(150., 20.0, 150.0), Vec3::Y),
-        camera: Camera {
-            is_active: true,
-            order: 1,
-            clear_color: ClearColorConfig::Custom(Color::srgba(0.2, 0.2, 0.2, 1.0)),
-            target: target.into(),
-            ..default()
-        },
-        ..default()
-    }
-}
-
-fn spawn_fps_cam(
+fn enter_starting_up(
     mut commands: Commands,
-    player: Query<Entity, With<crate::player::Player>>,
-    asset_server: Res<AssetServer>,
     windows: Query<&Window, With<PrimaryWindow>>,
-    game_world: Option<ResMut<GameWorldImage>>,
-    cam: Query<&Camera, With<FirstPersonCam>>,
+    asset_server: Res<AssetServer>,
 ) {
-    let window = windows.single();
-    if let Ok(_) = cam.get_single() {
-        info!("fps cam already exists, not inserting.");
-        return;
-    }
-
-    // #======================#
-    // #=== USER INTERFACE ===#
+    let window: &Window = windows.single();
     let render_image =
         asset_server.add(camera_image(window.width() as u32, window.height() as u32));
+    let new_game_world = GameWorldImage(render_image.clone());
+    commands.insert_resource(new_game_world);
+}
 
-    if let Some(mut game_world) = game_world {
-        game_world.0 = render_image.clone();
-    } else {
-        info!("Inserting GameWorldImage resource for fps cam.");
-        let new_game_world = GameWorldImage(render_image.clone());
-        commands.insert_resource(new_game_world);
+fn enter_in_game(
+    mut commands: Commands,
+    player: Query<Entity, With<crate::player::Player>>,
+    game_world: Res<GameWorldImage>,
+    cam: Query<&Camera, With<FirstPersonCam>>,
+) {
+    if let Ok(_) = cam.get_single() {
+        return;
     }
 
     commands.entity(player.single()).with_children(|child| {
@@ -203,7 +176,7 @@ fn spawn_fps_cam(
                 camera: Camera {
                     is_active: true,
                     order: 10,
-                    target: render_image.clone().into(),
+                    target: game_world.0.clone().into(),
                     ..default()
                 },
                 transform: Transform::from_xyz(0.0, 0.7, -1.0),
@@ -215,30 +188,14 @@ fn spawn_fps_cam(
     });
 }
 
-fn spawn_dev_cam(
+fn enter_dev_mode(
     mut commands: Commands,
     hud_entity: Query<Entity, Added<HudRoute>>,
-    windows: Query<&Window, With<PrimaryWindow>>,
-    asset_server: Res<AssetServer>,
-    game_world: Option<ResMut<GameWorldImage>>,
+    game_world: Res<GameWorldImage>,
     cam: Query<&Camera, With<Flycam>>,
 ) {
-    let window = windows.single();
     if let Ok(_) = cam.get_single() {
-        info!("flycam already exists, not inserting.");
         return;
-    }
-
-    // #======================#
-    // #=== USER INTERFACE ===#
-    let render_image =
-        asset_server.add(camera_image(window.width() as u32, window.height() as u32));
-    if let Some(mut game_world) = game_world {
-        game_world.0 = render_image.clone();
-    } else {
-        info!("Inserting GameWorldImage resource for dev cam.");
-        let new_game_world = GameWorldImage(render_image.clone());
-        commands.insert_resource(new_game_world);
     }
 
     for route_entity in &hud_entity {
@@ -246,16 +203,34 @@ fn spawn_dev_cam(
             .entity(route_entity)
             .insert(SpatialBundle::default())
             .with_children(|route| {
-                route.spawn(camera_bundle(render_image.clone())).insert((
-                    // StateScoped(GameState::DevMode),
-                    Flycam,
-                    UnrealCameraBundle::new(
-                        flycam_controller(),
-                        vec3(-154.44, 204.027, -111.268),
-                        vec3(150., 20.0, 150.0),
-                        Vec3::Y,
-                    ),
-                ));
+                route
+                    .spawn(Camera3dBundle {
+                        projection: PerspectiveProjection {
+                            // We must specify the FOV in radians.
+                            // Rust can convert degrees to radians for us.
+                            fov: 50.0_f32.to_radians(),
+                            ..default()
+                        }
+                        .into(),
+                        camera: Camera {
+                            is_active: true,
+                            order: 111,
+                            clear_color: ClearColorConfig::Custom(Color::srgba(0.2, 0.2, 0.2, 1.0)),
+                            target: game_world.0.clone().into(),
+                            ..default()
+                        },
+                        ..default()
+                    })
+                    .insert((
+                        // StateScoped(GameState::DevMode),
+                        Flycam,
+                        UnrealCameraBundle::new(
+                            flycam_controller(),
+                            vec3(-154.44, 204.027, -111.268),
+                            vec3(150., 20.0, 150.0),
+                            Vec3::Y,
+                        ),
+                    ));
             });
     }
 }
