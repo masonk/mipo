@@ -12,21 +12,40 @@ use bevy::{
 use bevy_lunex::prelude::*;
 use smooth_bevy_cameras::controllers::unreal::{UnrealCameraBundle, UnrealCameraController};
 
-use crate::camera::Flycam;
+use crate::camera::{FirstPersonCam, Flycam};
 use crate::palette::Palette;
+use crate::GameState;
 
 #[derive(Component, Debug, Default, Clone, PartialEq)]
 pub struct HudRoute;
 
 pub struct HudRoutePlugin;
 
-#[derive(Component)]
+#[derive(Resource)]
 struct GameWorldImage(Handle<Image>);
+
+#[derive(Component, Debug, Default, Clone, PartialEq)]
+pub struct GameWorldRoute;
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+struct CamerasSet;
 
 impl Plugin for HudRoutePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(PreUpdate, build_route.before(UiSystems::Compute));
-        app.add_systems(Update, update_gameworld_viewport);
+        app.add_systems(
+            Update,
+            update_gameworld_viewport.run_if(in_state(GameState::InGame)),
+        );
+        app.add_systems(
+            Update,
+            update_gameworld_viewport.run_if(in_state(GameState::DevMode)),
+        );
+        app.add_systems(OnEnter(GameState::InGame), spawn_fps_cam.in_set(CamerasSet));
+        app.add_systems(
+            OnEnter(GameState::DevMode),
+            spawn_dev_cam.in_set(CamerasSet),
+        );
     }
 }
 
@@ -34,80 +53,69 @@ fn update_gameworld_viewport(
     mut commands: Commands,
     mut asset_events: EventWriter<AssetEvent<Image>>,
     mut images: ResMut<Assets<Image>>,
-
     mut resize_reader: EventReader<WindowResized>,
-    hud_route: Query<(Entity), With<HudRoute>>,
     window: Query<&Window, With<PrimaryWindow>>,
-    mut query: Query<(Entity, &mut GameWorldImage), Without<HudRoute>>,
+    game_world: Option<ResMut<GameWorldImage>>,
+    game_world_route: Query<(Entity, Option<&UiLink>), With<GameWorldRoute>>,
 ) {
-    let hud_entity = match hud_route.get_single() {
-        Ok(h) => h,
-        Err(e) => return, // just means we're not in the hud route.
+    let game_world = match game_world {
+        Some(v) => v,
+        None => return warn!("Cannot update GameWorld because the resource isn't available"),
     };
 
-    let window = match window.get_single() {
-        Ok(w) => w,
-        Err(e) => {
-            warn!(
-                "Couldn't find primary window in Hud route, this is surely a bug: {:?}",
-                e
-            );
-            return;
-        }
-    };
-
-    for e in resize_reader.read() {
-        debug!("Window resized. New extent: {}, {}", e.width, e.height);
-
-        match query.get_single_mut() {
-            Ok((entity, mut game_world_image)) => {
-                // debug!("Camera: {:?}", camera);
-
-                // commands.entity(entity).insert(
-                //     UiLayout::solid()
-                //         .size((e.width, e.height))
-                //         .scaling(Scaling::Fill)
-                //         .pack::<Base>(),
-                // );
+    match game_world_route.get_single() {
+        Ok((game_world_entity, ui_link)) => {
+            if let Some(e) = resize_reader.read().last() {
+                debug!("Window resized. New extent: {}, {}", e.width, e.height);
 
                 asset_events.send(AssetEvent::Modified {
-                    id: game_world_image.0.id(),
+                    id: game_world.0.id(),
                 });
 
-                // Necessary to get hitscanning to work, for some weird reason.
-                let image = images.get_mut(game_world_image.0.id()).unwrap();
-                let size = Extent3d {
-                    width: e.width as u32,
-                    height: e.height as u32,
-                    ..default()
-                };
-                image.resize(size);
+                if let Some(image) = images.get_mut(game_world.0.id()) {
+                    let size = Extent3d {
+                        width: e.width as u32,
+                        height: e.height as u32,
+                        ..default()
+                    };
+                    image.resize(size);
+                }
 
-                // if let Some(ref mut viewport) = camera.viewport {
-                //     viewport.physical_size.x = e.width as u32;
-                //     viewport.physical_size.y = e.height as u32;
-                // }
-
-                // let projection = projection.as_mut();
-                // match projection {
-                //     Projection::Perspective(ref mut perspective) => {
-                //         let prev = perspective.aspect_ratio;
-                //         perspective.aspect_ratio = e.width / e.height;
-                //         info!(
-                //             "Updating 3d Game World aspect ration from {prev} to {}",
-                //             perspective.aspect_ratio
-                //         );
-                //     }
-                //     Projection::Orthographic(_ortho) => {}
-                // }
+                commands
+                    .entity(game_world_entity)
+                    .insert(game_world_solid_bundle(
+                        e.width,
+                        e.height,
+                        game_world.0.clone(),
+                    ));
+            } else if ui_link.is_none() {
+                debug!("No UiLink for GameWorldRoute: inserting bundle");
+                if let Ok(window) = window.get_single() {
+                    commands
+                        .entity(game_world_entity)
+                        .insert(game_world_solid_bundle(
+                            window.width(),
+                            window.height(),
+                            game_world.0.clone(),
+                        ));
+                }
             }
-            _ => {
-                warn!("No GameWorldImage to resize. Raycasting into the 3d game world probably doesn't work.")
-            }
-        };
+        }
+        Err(e) => return warn!("Couldn't find GameWorldRoute: {e}"),
     }
 }
 
+fn game_world_solid_bundle(w: f32, h: f32, image: Handle<Image>) -> impl Bundle {
+    (
+        UiLink::<MainUi>::path("Hud/GameWorld"),
+        UiLayout::solid()
+            .size((w, h))
+            .scaling(Scaling::VerFill)
+            .pack::<Base>(),
+        UiImage2dBundle::from(image),
+        Pickable::IGNORE,
+    )
+}
 fn camera_image(width: u32, height: u32) -> Image {
     let size = Extent3d {
         width,
@@ -156,47 +164,109 @@ fn camera_bundle(target: Handle<Image>) -> Camera3dBundle {
     }
 }
 
+fn spawn_fps_cam(
+    mut commands: Commands,
+    player: Query<Entity, With<crate::player::Player>>,
+    asset_server: Res<AssetServer>,
+    windows: Query<&Window, With<PrimaryWindow>>,
+    game_world: Option<ResMut<GameWorldImage>>,
+    cam: Query<&Camera, With<FirstPersonCam>>,
+) {
+    let window = windows.single();
+    if let Ok(_) = cam.get_single() {
+        info!("fps cam already exists, not inserting.");
+        return;
+    }
+
+    // #======================#
+    // #=== USER INTERFACE ===#
+    let render_image =
+        asset_server.add(camera_image(window.width() as u32, window.height() as u32));
+
+    if let Some(mut game_world) = game_world {
+        game_world.0 = render_image.clone();
+    } else {
+        info!("Inserting GameWorldImage resource for fps cam.");
+        let new_game_world = GameWorldImage(render_image.clone());
+        commands.insert_resource(new_game_world);
+    }
+
+    commands.entity(player.single()).with_children(|child| {
+        info!("Spawning FirstPersonCam");
+        child.spawn((
+            // StateScoped(GameState::InGame),
+            Camera3dBundle {
+                projection: Projection::Perspective(PerspectiveProjection {
+                    fov: 50.0_f32.to_radians(),
+                    ..default()
+                }),
+                camera: Camera {
+                    is_active: true,
+                    order: 10,
+                    target: render_image.clone().into(),
+                    ..default()
+                },
+                transform: Transform::from_xyz(0.0, 0.7, -1.0),
+                ..default()
+            },
+            Name::new("FirstPersonCamera"),
+            FirstPersonCam,
+        ));
+    });
+}
+
+fn spawn_dev_cam(
+    mut commands: Commands,
+    hud_entity: Query<Entity, Added<HudRoute>>,
+    windows: Query<&Window, With<PrimaryWindow>>,
+    asset_server: Res<AssetServer>,
+    game_world: Option<ResMut<GameWorldImage>>,
+    cam: Query<&Camera, With<Flycam>>,
+) {
+    let window = windows.single();
+    if let Ok(_) = cam.get_single() {
+        info!("flycam already exists, not inserting.");
+        return;
+    }
+
+    // #======================#
+    // #=== USER INTERFACE ===#
+    let render_image =
+        asset_server.add(camera_image(window.width() as u32, window.height() as u32));
+    if let Some(mut game_world) = game_world {
+        game_world.0 = render_image.clone();
+    } else {
+        info!("Inserting GameWorldImage resource for dev cam.");
+        let new_game_world = GameWorldImage(render_image.clone());
+        commands.insert_resource(new_game_world);
+    }
+
+    for route_entity in &hud_entity {
+        commands
+            .entity(route_entity)
+            .insert(SpatialBundle::default())
+            .with_children(|route| {
+                route.spawn(camera_bundle(render_image.clone())).insert((
+                    // StateScoped(GameState::DevMode),
+                    Flycam,
+                    UnrealCameraBundle::new(
+                        flycam_controller(),
+                        vec3(-154.44, 204.027, -111.268),
+                        vec3(150., 20.0, 150.0),
+                        Vec3::Y,
+                    ),
+                ));
+            });
+    }
+}
+
 fn build_route(
     mut commands: Commands,
     query: Query<Entity, Added<HudRoute>>,
-    player: Query<Entity, With<crate::player::Player>>,
-    // window: Query<&Window>,
-    mut asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    windows: Query<&Window, With<PrimaryWindow>>,
-    mut image_events: EventWriter<AssetEvent<Image>>,
 ) {
-    let window = windows.single();
-
     for route_entity in &query {
-        // #======================#
-        // #=== USER INTERFACE ===#
-        let render_image =
-            asset_server.add(camera_image(window.width() as u32, window.height() as u32));
-
-        info!("Spawning FirstPersonCam");
-        commands.entity(player.single()).with_children(|child| {
-            child.spawn((
-                Camera3dBundle {
-                    projection: Projection::Perspective(PerspectiveProjection {
-                        fov: 50.0_f32.to_radians(),
-                        ..default()
-                    }),
-                    camera: Camera {
-                        is_active: false,
-                        order: 10,
-                        target: render_image.clone().into(),
-                        ..default()
-                    },
-                    transform: Transform::from_xyz(0.0, 0.7, -1.0),
-                    ..default()
-                },
-                Name::new("FirstPersonCamera"),
-                crate::camera::FirstPersonCam,
-            ));
-        });
-
         info!("Spawning Hud Route");
         // let window = window.single();
         // Spawn the route
@@ -205,36 +275,15 @@ fn build_route(
             .insert(SpatialBundle::default())
             .with_children(|route| {
                 route
-                    .spawn(camera_bundle(render_image.clone()))
-                    .insert(Flycam)
-                    .insert(UnrealCameraBundle::new(
-                        flycam_controller(),
-                        vec3(-154.44, 204.027, -111.268),
-                        vec3(150., 20.0, 150.0),
-                        Vec3::Y,
-                    ))
-                    .insert(flycam_controller());
-
-                route
                     .spawn((
                         UiTreeBundle::<MainUi>::from(UiTree::new("Hud")),
                         MovableByCamera,
                     ))
                     .with_children(|ui| {
                         let root = UiLink::<MainUi>::path("Hud");
-                        // ui.spawn((root.clone(), UiLayout::window_full().pack::<Base>()));
+                        info!("Spawned GameWorldRoute as a child of UiTree");
 
-                        // Spawn 3D camera view
-                        ui.spawn((
-                            root.add("3dGameWorldCamera"),
-                            UiLayout::solid()
-                                .size((window.width(), window.height()))
-                                .scaling(Scaling::VerFill)
-                                .pack::<Base>(),
-                            GameWorldImage(render_image.clone()),
-                            UiImage2dBundle::from(render_image),
-                            Pickable::IGNORE,
-                        ));
+                        ui.spawn(GameWorldRoute);
                         let text = "Spinner";
                         const BUTTON_HEIGHT: f32 = 25.;
                         const BUTTON_SPACING: f32 = 10.;

@@ -1,9 +1,10 @@
 use crate::palette::Palette;
-use crate::player::EnablePlayerControl;
 use bevy::{prelude::*, sprite::Anchor, window::CursorGrabMode, window::PrimaryWindow};
 use bevy_lunex::prelude::*;
 use smooth_bevy_cameras::controllers::unreal::{UnrealCameraBundle, UnrealCameraController};
 pub struct CameraPlugin;
+
+use crate::GameState;
 
 #[derive(Debug, Clone, Component)]
 pub(crate) struct Flycam;
@@ -15,6 +16,8 @@ impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, spawn_camera);
         app.add_systems(Update, handle_input);
+        app.add_systems(OnEnter(GameState::InGame), enter_in_game);
+        app.add_systems(OnEnter(GameState::DevMode), enter_dev_mode);
     }
 }
 
@@ -87,57 +90,46 @@ fn spawn_camera(
         });
 }
 
-fn flycam_controller() -> UnrealCameraController {
-    UnrealCameraController {
-        keyboard_mvmt_sensitivity: 100.0,
-        ..default()
-    }
-}
 fn handle_input(
     keyboard: Res<ButtonInput<KeyCode>>,
-    mut enable: ResMut<EnablePlayerControl>,
-    mut commands: Commands,
-    mut windows: Query<&mut Window, With<PrimaryWindow>>,
-    mut fly_cam: Query<(Entity, &mut Camera), (With<Flycam>, Without<FirstPersonCam>)>,
-    mut fps_cam: Query<&mut Camera, With<FirstPersonCam>>,
+    state: Res<State<GameState>>,
+    mut next_state: ResMut<NextState<GameState>>,
 ) {
+    if keyboard.just_pressed(KeyCode::F3) {
+        if *state.get() == GameState::DevMode {
+            info!("Setting GameState to InGame");
+            next_state.set(GameState::InGame);
+        } else {
+            info!("Setting GameState to DevMode");
+            next_state.set(GameState::DevMode);
+        }
+    }
+}
+
+fn enter_in_game(mut windows: Query<&mut Window, With<PrimaryWindow>>) {
     let mut window = match windows.get_single_mut() {
         Ok(w) => w,
         Err(e) => {
             return warn!("Couldn't find the PrimaryWindow for disabling cursor/enabling recticle")
         }
     };
+    info!("Hiding cursor in FPS mode");
+    window.cursor.visible = false;
+    window.cursor.grab_mode = CursorGrabMode::Locked;
+    let center_x = window.width() / 2.;
+    let center_y = window.height() / 2.;
 
-    if keyboard.just_pressed(KeyCode::F3) {
-        let (fly_cam_entity_id, mut fly_cam) = match fly_cam.get_single_mut() {
-            Ok((fly_cam_entity_id, fly_cam)) => (fly_cam_entity_id, fly_cam),
-            Err(e) => return warn!("Could not find Flycam, {e}"),
-        };
+    window.set_cursor_position(Some((center_x, center_y).into()));
+}
 
-        let mut fps_cam = match fps_cam.get_single_mut() {
-            Ok(fps_cam) => fps_cam,
-            Err(e) => return warn!("Couldn't get the fps cam: {e}"),
-        };
-
-        if fly_cam.is_active {
-            info!("Setting fps_cam to active");
-            commands
-                .entity(fly_cam_entity_id)
-                .remove::<UnrealCameraController>();
-            enable.0 = true;
-            fly_cam.is_active = false;
-            fps_cam.is_active = true;
-            window.cursor.visible = false;
-        } else {
-            info!("Setting fly_cam to active");
-            enable.0 = false;
-            fly_cam.is_active = true;
-            fps_cam.is_active = false;
-            commands
-                .entity(fly_cam_entity_id)
-                .insert(flycam_controller());
-            window.cursor.visible = true;
-            window.cursor.grab_mode = CursorGrabMode::Confined;
+fn enter_dev_mode(mut windows: Query<&mut Window, With<PrimaryWindow>>) {
+    let mut window = match windows.get_single_mut() {
+        Ok(w) => w,
+        Err(e) => {
+            return warn!("Couldn't find the PrimaryWindow for disabling cursor/enabling recticle")
         }
-    }
+    };
+    info!("Showing cursor in dev mode.");
+    window.cursor.visible = true;
+    window.cursor.grab_mode = CursorGrabMode::None;
 }

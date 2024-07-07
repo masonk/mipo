@@ -1,4 +1,4 @@
-use crate::camera::FirstPersonCam;
+use crate::{camera::FirstPersonCam, GameState};
 use bevy::{
     input::{mouse::MouseMotion, InputSystem},
     log::prelude::*,
@@ -20,21 +20,13 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
+        info!("Installing PlayerPlugin");
         app.init_resource::<MovementInput>()
             .init_resource::<LookInput>()
-            .init_resource::<EnablePlayerControl>()
-            .add_systems(Startup, spawn_player)
+            .add_systems(OnEnter(GameState::StartingUp), spawn_player)
             .add_systems(PreUpdate, handle_input.after(InputSystem))
             .add_systems(Update, player_look)
             .add_systems(FixedUpdate, player_movement);
-    }
-}
-
-#[derive(Debug, Resource)]
-pub struct EnablePlayerControl(pub bool);
-impl Default for EnablePlayerControl {
-    fn default() -> Self {
-        EnablePlayerControl(true)
     }
 }
 
@@ -48,12 +40,12 @@ struct LookInput(Vec2); // Degrees that the user has turned since last update.
 
 fn handle_input(
     keyboard: Res<ButtonInput<KeyCode>>,
-    enable: Res<EnablePlayerControl>,
     mut movement: ResMut<MovementInput>,
     mut look: ResMut<LookInput>,
     mut mouse_events: EventReader<MouseMotion>,
+    state: Res<State<GameState>>,
 ) {
-    if !enable.0 {
+    if *state.get() != GameState::InGame {
         return;
     }
     if keyboard.pressed(KeyCode::KeyW) {
@@ -85,7 +77,7 @@ fn handle_input(
 
 fn player_movement(
     time: Res<Time>,
-    enable: Res<EnablePlayerControl>,
+    state: Res<State<GameState>>,
     mut input: ResMut<MovementInput>,
     mut player: Query<(
         &mut Transform,
@@ -95,7 +87,7 @@ fn player_movement(
     mut vertical_movement: Local<f32>,
     mut grounded_timer: Local<f32>,
 ) {
-    if !enable.0 {
+    if *state.get() != GameState::InGame {
         return;
     }
     let Ok((transform, mut controller, output)) = player.get_single_mut() else {
@@ -158,6 +150,7 @@ fn spawn_player(
     assets: Res<AssetServer>, // mut meshes: ResMut<Assets<Mesh>>,
                               // mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    info!("Spawning Player");
     let flashlight = (
         SpotLightBundle {
             spot_light: SpotLight {

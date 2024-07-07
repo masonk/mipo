@@ -38,6 +38,18 @@ use bevy_rapier3d::prelude::*;
 use bevy_stl;
 use smooth_bevy_cameras;
 
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+enum GameState {
+    #[default]
+    StartingUp,
+    DevMode,
+    InGame,
+}
+
+fn finish_setup(mut game_state: ResMut<NextState<GameState>>) {
+    game_state.set(GameState::InGame)
+}
+
 // cargo run  --target wasm32-unknown-unknown  assets/grand_canyon_small_heightmap.png
 // cargo run assets/grand_canyon_small_heightmap.png
 // cargo run assets/36_377_-112_445_11_8129_8129.png
@@ -52,6 +64,7 @@ fn main() {
         //         ..default()
         //     });
         // })
+        // .enable_state_scoped_entities::<GameState>()
         .add_plugins((
             DefaultPlugins
                 .set(LogPlugin {
@@ -96,6 +109,9 @@ fn main() {
             bevy_stl::StlPlugin,
             components::ComponentPlugin,
         ))
+        .init_state::<GameState>()
+        .add_systems(Update, finish_setup.run_if(in_state(GameState::StartingUp)))
+        .enable_state_scoped_entities::<GameState>()
         // .add_system_to_stage(
         //     CoreStage::PostUpdate,
         //     Assets::<Image>::asset_event_system.before(CameraUpdateSystem),
