@@ -10,19 +10,20 @@ SPawn a bad guy and shoot it.
 
 - [DONE] Figure out why cursor isn't hidden or confined. Lunex probleM?
     - Answer: registering a Cursor2d with native: false ignores the cursor captivity settings
+- [DONE] When you press escape, you see your cursor
+    - [DONE] Bevy states?
+    - [DONE] Also bevy states for camera mode?
+- [DONE] Switch to keyboard based input for the hitscan
+- [DONE] Figure out why resizing causes hitscanning to screw up. 
+    - [DONE] Don't let the game world become stretched.
 
 ---
-- Draw a ray to target? Like a laser?
-- When you press escape, you see your cursor
-    - Bevy states?
-    - Also bevy states for camera mode?
+- Throw a fireball.
 - On hit:
     - respawn in a random place within a cube
-- [DONE] Switch to keyboard based input for the hitscan
 - Draw a ray to target? Like a laser?
 - Button to clear targets
 - implement brownian motion for targets
-- Figure out why resizing causes hitscanning to screw up. 
-    - Don't let the game world become stretched.
+
 - button for toggling full screen mode
 - 

@@ -190,7 +190,7 @@ fn enter_in_game(
 
 fn enter_dev_mode(
     mut commands: Commands,
-    hud_entity: Query<Entity, Added<HudRoute>>,
+    hud_entity: Query<Entity, With<HudRoute>>,
     game_world: Res<GameWorldImage>,
     cam: Query<&Camera, With<Flycam>>,
 ) {

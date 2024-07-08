@@ -200,6 +200,10 @@ pub fn cast_ray(
 
     // We will color in red the colliders hovered by the mouse.
     for (camera, camera_global_transform, camera_transform) in &cameras {
+        if !camera.is_active {
+            debug!("Skipping ray for inactive camera.");
+            return;
+        }
         // First, compute a ray from the mouse position.
         let Some(ray) = camera.viewport_to_world(camera_global_transform, cursor_position) else {
             warn!("no ray");

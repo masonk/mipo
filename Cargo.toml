@@ -10,14 +10,16 @@ r = "run assets/grand_canyon_small_heightmap.png"
 
 [dependencies]
 anyhow = "1.0.86"
-# bevy = { version = "0.14.0-rc.4" }
-bevy = { version = "0.14.0-rc.4", features = ["dynamic_linking"] }
+# bevy = { version = "0.14.0" }
+bevy = { version = "0.14.0", features = ["dynamic_linking"] }
+# bevy_firework = { version = "0.4.0", default-features = false }
 # bevy-inspector-egui = {  path = "../bevy-inspector-egui/crates/bevy-inspector-egui" }
-bevy_log = "0.14.0-rc.3"
+bevy_log = "0.14.0"
 bevy_lunex = { git = "https://github.com/bytestring-net/bevy_lunex" }
 #bevy_lunex = { git = "https://github.com/bytestring-net/bevy_lunex", features=["debug"] }
-bevy_rapier3d = { version = "0.27.0-rc.1",  features = [ "simd-stable", "debug-render-3d" ] }
+bevy_rapier3d = { version = "0.27.0",  features = [ "simd-stable", "debug-render-3d" ] }
 bevy_stl = "^0.14.0"
+# bevy_utilitarian = "0.5.0"
 ciborium = { version = "^0.2.2", optional = true }
 clap = { version = "4.5.7", features = ["derive"] }
 colorgrad = "0.6.2"
@@ -61,3 +63,4 @@ lto = "thin"
 [patch.crates-io]
 smooth-bevy-cameras = { git = "https://github.com/masonk/smooth-bevy-cameras.git" }
 bevy_stl = { git = "https://github.com/masonk/bevy_stl.git" }
+# bevy_firework = { git = "https://github.com/masonk/bevy_firework.git" }

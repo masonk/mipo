@@ -1,4 +1,6 @@
-use crate::{camera::FirstPersonCam, GameState};
+use std::time::Duration;
+
+use crate::{camera::FirstPersonCam, items::FireballAbility, GameState};
 use bevy::{
     input::{mouse::MouseMotion, InputSystem},
     log::prelude::*,
@@ -13,7 +15,19 @@ const MOVEMENT_SPEED: f32 = 8.0;
 const JUMP_SPEED: f32 = 20.0;
 const GRAVITY: f32 = -9.81;
 
-#[derive(Component)]
+#[derive(Component, Default)]
+pub struct Mana {
+    pub current: u32,
+    pub max: u32,
+}
+
+#[derive(Component, Default)]
+pub struct ManaRegen {
+    pub regen_mana_timer: Timer, // every time the timer ticks, give back this much mana.
+    pub regen_per_tick: u32,
+}
+
+#[derive(Component, Default)]
 pub struct Player;
 
 pub struct PlayerPlugin;
@@ -26,7 +40,7 @@ impl Plugin for PlayerPlugin {
             .add_systems(OnEnter(GameState::StartingUp), spawn_player)
             .add_systems(PreUpdate, handle_input.after(InputSystem))
             .add_systems(Update, player_look)
-            .add_systems(FixedUpdate, player_movement);
+            .add_systems(FixedUpdate, (player_movement, regen));
     }
 }
 
@@ -75,6 +89,16 @@ fn handle_input(
     }
 }
 
+fn regen(time: Res<Time>, mut mana_query: Query<(&mut Mana, &mut ManaRegen)>) {
+    for (mut mana, mut regen) in &mut mana_query {
+        // give the player some mana back
+        regen.regen_mana_timer.tick(time.delta());
+        if regen.regen_mana_timer.finished() {
+            mana.current += regen.regen_per_tick;
+            mana.current = mana.current.clamp(0, mana.max);
+        }
+    }
+}
 fn player_movement(
     time: Res<Time>,
     state: Res<State<GameState>>,
@@ -167,6 +191,11 @@ fn spawn_player(
         },
         Name::new("flashlight"),
     );
+    let mut fireball_timer =
+        Timer::new(std::time::Duration::from_millis(1000), TimerMode::Repeating);
+
+    // Player should start with it ready.
+    fireball_timer.tick(Duration::from_millis(1000));
 
     let player = (
         Name::new("player"),
@@ -196,6 +225,23 @@ fn spawn_player(
             ..default()
         },
         Player,
+        FireballAbility {
+            mana_cost: 5,
+            cooldown_timer: fireball_timer,
+            projectile_speed: 70.,
+            projectile_radius: 0.3,
+            gravity: 1.,
+            damping: 1.,
+            ..default()
+        },
+        Mana {
+            current: 100,
+            max: 100,
+        },
+        ManaRegen {
+            regen_mana_timer: Timer::new(Duration::from_millis(1000), TimerMode::Repeating),
+            regen_per_tick: 3,
+        },
     );
 
     commands.spawn(player).with_children(|b| {
