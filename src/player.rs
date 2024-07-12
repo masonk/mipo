@@ -17,8 +17,9 @@ use bevy_rapier3d::prelude::*;
 const MOUSE_SENSITIVITY: f32 = 0.3;
 const GROUND_TIMER: f32 = 0.5;
 const MOVEMENT_SPEED: f32 = 8.0;
-const JUMP_SPEED: f32 = 20.0;
+const JUMP_SPEED: f32 = 40.0;
 const GRAVITY: f32 = -9.81;
+const AIR_JUMPS: u32 = 5;
 
 #[derive(Component, Default)]
 pub struct Player;
@@ -71,7 +72,7 @@ fn handle_input(
     if keyboard.pressed(KeyCode::ShiftLeft) {
         **movement *= 2.0;
     }
-    if keyboard.pressed(KeyCode::Space) {
+    if keyboard.just_pressed(KeyCode::Space) {
         movement.y = 1.0;
     }
 
@@ -93,6 +94,7 @@ fn player_movement(
     )>,
     mut vertical_movement: Local<f32>,
     mut grounded_timer: Local<f32>,
+    mut air_jumps_left: Local<u32>,
 ) {
     if *state.get() != GameState::InGame {
         return;
@@ -103,12 +105,14 @@ fn player_movement(
     let delta_time = time.delta_seconds();
     // Retrieve input
     let mut movement = Vec3::new(input.x, 0.0, input.z) * MOVEMENT_SPEED;
+    // Is the player jumping?
     let jump_speed = input.y * JUMP_SPEED;
     // Clear input
     **input = Vec3::ZERO;
     // Check physics ground check
     if output.map(|o| o.grounded).unwrap_or(false) {
         *grounded_timer = GROUND_TIMER;
+        *air_jumps_left = AIR_JUMPS;
         *vertical_movement = 0.0;
     }
     // If we are grounded we can jump
@@ -118,6 +122,13 @@ fn player_movement(
         if jump_speed > 0.0 {
             *vertical_movement = jump_speed;
             *grounded_timer = 0.0;
+        }
+    } else {
+        if jump_speed > 0.0 {
+            if *air_jumps_left > 0 {
+                *air_jumps_left -= 1;
+                *vertical_movement += jump_speed;
+            }
         }
     }
     movement.y = *vertical_movement;
