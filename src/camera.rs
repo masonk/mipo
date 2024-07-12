@@ -46,7 +46,8 @@ fn spawn_camera(
         .spawn((
             MainUi,
             Camera2dBundle {
-                transform: Transform::from_xyz(0.0, 0.0, 1000.0),
+                // transform: Transform::from_xyz(0.0, 0.0, 1000.0),
+                transform: Transform::default(),
                 camera: Camera {
                     hdr: true,
                     ..default()

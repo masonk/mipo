@@ -200,10 +200,6 @@ pub fn cast_ray(
 
     // We will color in red the colliders hovered by the mouse.
     for (camera, camera_global_transform, camera_transform) in &cameras {
-        if !camera.is_active {
-            debug!("Skipping ray for inactive camera.");
-            return;
-        }
         // First, compute a ray from the mouse position.
         let Some(ray) = camera.viewport_to_world(camera_global_transform, cursor_position) else {
             warn!("no ray");
@@ -215,13 +211,13 @@ pub fn cast_ray(
             None => return warn!("no viewport"),
         };
 
-        let mut cursor_ndc = viewport_to_ndc(logical_viewport_size, cursor_position).extend(1.0);
+        let mut _cursor_ndc = viewport_to_ndc(logical_viewport_size, cursor_position).extend(1.0);
 
-        let near = camera
+        let _near = camera
             .ndc_to_world(camera_global_transform, camera_transform.translation)
             .unwrap();
 
-        gizmos.ray(near, ray.get_point(25.0), Palette::Red);
+        // gizmos.ray(near, ray.get_point(25.0), Palette::Red);
 
         // Because of the query filter, only colliders attached to a dynamic body
         // will get an event.
