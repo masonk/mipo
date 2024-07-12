@@ -238,9 +238,15 @@ fn enter_dev_mode(
 fn build_route(
     mut commands: Commands,
     query: Query<Entity, Added<HudRoute>>,
+    windows: Query<&Window, With<PrimaryWindow>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
+    let window = match windows.get_single() {
+        Ok(w) => w,
+        Err(e) => return warn!("Couldnt' get primary window: {e}"),
+    };
+
     for route_entity in &query {
         info!("Spawning Hud Route");
         // let window = window.single();
@@ -249,6 +255,8 @@ fn build_route(
             .entity(route_entity)
             .insert(SpatialBundle::default())
             .with_children(|route| {
+                Vec2::new(window.width() / 2.0 - 500., window.height() / -2.0 + 500.);
+
                 route
                     .spawn((
                         UiTreeBundle::<MainUi>::from(UiTree::new("Hud")),
@@ -294,7 +302,7 @@ fn build_route(
                             UiDepthBias(50.0),
                             MaterialMesh2dBundle {
                                 mesh: Mesh2dHandle(meshes.add(Rectangle {
-                                    half_size: Vec2::splat(50.0),
+                                    half_size: Vec2::new(50., 25.),
                                 })),
                                 material: materials.add(Palette::Blue.to_color()),
                                 ..default()
@@ -310,7 +318,7 @@ fn build_route(
                                     Rl(100.) - Ab(90.),
                                     Ab(BUTTON_SPACING + (BUTTON_HEIGHT + BUTTON_SPACING) * above),
                                 ))
-                                .size(Ab((80.0, 25.)))
+                                .size(Ab((100., 50.)))
                                 .pack::<Base>(),
                             crate::components::ui::button::Button { text: text.into() },
                         ));
@@ -325,3 +333,5 @@ fn flycam_controller() -> UnrealCameraController {
         ..default()
     }
 }
+#[derive(Component, Debug, Default, Clone, PartialEq)]
+struct ManaRemaining;

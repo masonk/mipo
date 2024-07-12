@@ -23,6 +23,7 @@ mod camera;
 mod components;
 mod geometry;
 mod items;
+mod mana;
 mod objects;
 mod palette;
 mod physics;
@@ -122,7 +123,8 @@ fn main() {
             objects::TargetsPlugin,
             items::ItemsPlugin,
             routes::RoutesPlugin,
-            bevy_lunex::UiPlugin, // diegetic ui system
+            bevy_lunex::UiPlugin,
+            crate::mana::ManaPlugin, // diegetic ui system
         ))
         .insert_resource(ClearColor(Color::srgb(0.53, 0.53, 0.53)))
         .insert_resource(WireframeConfig {

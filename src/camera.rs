@@ -1,5 +1,10 @@
 use crate::palette::Palette;
-use bevy::{prelude::*, sprite::Anchor, window::CursorGrabMode, window::PrimaryWindow};
+use bevy::{
+    prelude::*,
+    sprite::{Anchor, MaterialMesh2dBundle, Mesh2dHandle, Sprite},
+    window::CursorGrabMode,
+    window::{PrimaryWindow, WindowResized},
+};
 use bevy_lunex::prelude::*;
 use smooth_bevy_cameras::controllers::unreal::{UnrealCameraBundle, UnrealCameraController};
 pub struct CameraPlugin;
@@ -49,7 +54,7 @@ fn spawn_camera(
                 //tonemapping: Tonemapping::None,
                 ..default()
             },
-            BloomSettings::OLD_SCHOOL,
+            BloomSettings::NATURAL,
             InheritedVisibility::default(),
             /*VfxWiggleCamera {
                 sinusoid: vec![
@@ -66,6 +71,7 @@ fn spawn_camera(
                 SpriteBundle {
                     texture: crosshairs,
                     transform: Transform {
+                        translation: Vec3::new(0., 0., 500.),
                         scale: Vec3::new(0.45, 0.45, 1.0),
                         ..default()
                     },

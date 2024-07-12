@@ -4,7 +4,7 @@ use bevy::prelude::*;
 
 use bevy_rapier3d::prelude::*;
 pub struct FireballPlugin;
-use crate::{camera::FirstPersonCam, player::Mana};
+use crate::{camera::FirstPersonCam, mana::Mana};
 impl Plugin for FireballPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, (throw_fireball, clean_fireball));
@@ -83,7 +83,7 @@ pub fn throw_fireball(
     if !ability.cooldown_timer.finished() {
         return;
     }
-    if !mouse.just_pressed(MouseButton::Right) {
+    if !mouse.pressed(MouseButton::Right) {
         return;
     }
     if mana.current < ability.mana_cost {
@@ -126,6 +126,8 @@ pub fn throw_fireball(
             RigidBody::Dynamic,
             Collider::ball(ability.projectile_radius),
             GravityScale(ability.gravity),
+            // prevents "tunneling"
+            Ccd::enabled(),
             ColliderMassProperties::Density(5.),
             Damping {
                 linear_damping: ability.damping,

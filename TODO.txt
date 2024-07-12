@@ -16,9 +16,14 @@ SPawn a bad guy and shoot it.
 - [DONE] Switch to keyboard based input for the hitscan
 - [DONE] Figure out why resizing causes hitscanning to screw up. 
     - [DONE] Don't let the game world become stretched.
+- [DONE] Throw a fireball.
+- [DONE] Mana bar
 
 ---
-- Throw a fireball.
+- more platforms
+- movement abilities
+- High jump, double jump, trampolines
+- Skybox, better lighting, volumetric fog
 - On hit:
     - respawn in a random place within a cube
 - Draw a ray to target? Like a laser?
@@ -26,4 +31,7 @@ SPawn a bad guy and shoot it.
 - implement brownian motion for targets
 
 - button for toggling full screen mode
-- 
+- Cooler effects for fireball
+    - Explode on contact / at the end of its journey
+    - better graphics
+
