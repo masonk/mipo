@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use crate::{
     camera::FirstPersonCam,
-    items::FireballAbility,
+    items::{FireballAbility, Platform},
     mana::{Mana, ManaRegen},
     GameState,
 };
@@ -15,11 +15,11 @@ use bevy_rapier3d::control::KinematicCharacterController;
 use bevy_rapier3d::prelude::*;
 
 const MOUSE_SENSITIVITY: f32 = 0.3;
-const GROUND_TIMER: f32 = 0.5;
+const GROUND_TIMER: f32 = 3.0;
 const MOVEMENT_SPEED: f32 = 8.0;
 const JUMP_SPEED: f32 = 40.0;
 const GRAVITY: f32 = -9.81;
-const AIR_JUMPS: u32 = 5;
+const AIR_JUMPS: u32 = 10;
 
 #[derive(Component, Default)]
 pub struct Player;
@@ -34,7 +34,7 @@ impl Plugin for PlayerPlugin {
             .add_systems(OnEnter(GameState::StartingUp), spawn_player)
             .add_systems(PreUpdate, handle_input.after(InputSystem))
             .add_systems(Update, player_look)
-            .add_systems(FixedUpdate, (player_movement));
+            .add_systems(FixedUpdate, player_movement);
     }
 }
 
@@ -85,21 +85,26 @@ fn handle_input(
 
 fn player_movement(
     time: Res<Time>,
-    state: Res<State<GameState>>,
     mut input: ResMut<MovementInput>,
-    mut player: Query<(
-        &mut Transform,
-        &mut KinematicCharacterController,
-        Option<&KinematicCharacterControllerOutput>,
-    )>,
+    mut player: Query<
+        (
+            Entity,
+            &mut Transform,
+            &GlobalTransform,
+            &mut KinematicCharacterController,
+            Option<&KinematicCharacterControllerOutput>,
+        ),
+        With<Player>,
+    >,
     mut vertical_movement: Local<f32>,
     mut grounded_timer: Local<f32>,
     mut air_jumps_left: Local<u32>,
+    platforms: Query<(Entity, &Transform, &GlobalTransform, &Platform), Without<Player>>,
+    rapier_context: Res<RapierContext>,
 ) {
-    if *state.get() != GameState::InGame {
-        return;
-    }
-    let Ok((transform, mut controller, output)) = player.get_single_mut() else {
+    let Ok((player_entity, player_transform, player_global_transform, mut controller, output)) =
+        player.get_single_mut()
+    else {
         return;
     };
     let delta_time = time.delta_seconds();
@@ -115,12 +120,14 @@ fn player_movement(
         *air_jumps_left = AIR_JUMPS;
         *vertical_movement = 0.0;
     }
+
     // If we are grounded we can jump
     if *grounded_timer > 0.0 {
         *grounded_timer -= delta_time;
         // If we jump we clear the grounded tolerance
         if jump_speed > 0.0 {
             *vertical_movement = jump_speed;
+            // Unground me.
             *grounded_timer = 0.0;
         }
     } else {
@@ -133,13 +140,40 @@ fn player_movement(
     }
     movement.y = *vertical_movement;
     *vertical_movement += GRAVITY * delta_time * controller.custom_mass.unwrap_or(1.0);
-    controller.translation = Some(transform.rotation * (movement * delta_time));
+    let mut translation = player_transform.rotation * movement;
+
+    for (platform_entity, platform_transform, platform_global_transform, platform) in &platforms {
+        if let Some(_contact_pair) = rapier_context.contact_pair(player_entity, platform_entity) {
+            // TODO: Figure transform the platform linvel (in world coordinates) to local player coordinates.'
+            let global_platform_position = platform_global_transform.translation();
+            let global_player_position = player_global_transform.translation();
+            if global_player_position.y > global_platform_position.y + 3.0 {
+                // player is standing on the platform.
+                let player_local_linvel = player_global_transform
+                    .affine()
+                    .inverse()
+                    .transform_vector3(platform.linvel);
+                // translation += platform.linvel;
+                info!(
+                    "Player global transform: {player_global_transform:?}, Global linvel {} -> player linvel {}",
+                    platform.linvel, player_local_linvel
+                );
+                // Note:  has_any_active_contacts() always returns false, because the kinematic character controller keeps the player very slightly floating.
+                // we are sort of faking this by just checking whether the player is very close to the platform.
+            }
+        }
+    }
+    controller.translation = Some(translation * delta_time);
 }
 
 fn player_look(
     mut player: Query<
         &mut Transform,
-        (With<KinematicCharacterController>, Without<FirstPersonCam>),
+        (
+            With<KinematicCharacterController>,
+            With<Player>,
+            Without<FirstPersonCam>,
+        ),
     >,
     mut camera: Query<&mut Transform, With<FirstPersonCam>>,
     look: ResMut<LookInput>,
@@ -200,10 +234,11 @@ fn spawn_player(
         },
         RigidBody::KinematicPositionBased,
         Collider::cuboid(0.3, 1.0, 0.3),
+        ActiveEvents::COLLISION_EVENTS, // Make sure that we always solve for player contacts.
         KinematicCharacterController {
             custom_mass: Some(5.0),
             up: Vec3::Y,
-            offset: CharacterLength::Absolute(0.01),
+            offset: CharacterLength::Absolute(0.0001),
             slide: true,
             autostep: Some(CharacterAutostep {
                 max_height: CharacterLength::Relative(0.3),
@@ -215,7 +250,7 @@ fn spawn_player(
             // Automatically slide down on slopes smaller than 30 degrees.
             min_slope_slide_angle: 30.0_f32.to_radians(),
             apply_impulse_to_dynamic_bodies: true,
-            snap_to_ground: None,
+            snap_to_ground: Some(CharacterLength::Absolute(0.2)),
             ..default()
         },
         Player,

@@ -1,8 +1,5 @@
 use bevy::{
-    input::{
-        common_conditions::*,
-        mouse::{MouseButton, MouseButtonInput},
-    },
+    input::{common_conditions::*, mouse::MouseButton},
     prelude::*,
     render::{
         camera,
@@ -13,8 +10,8 @@ use bevy::{
 };
 use bevy_rapier3d::prelude::*;
 
-use crate::camera::FirstPersonCam;
 use crate::palette::Palette;
+use crate::{asset_cache, camera::FirstPersonCam};
 use rand::{self, Rng};
 
 #[derive(Component)]
@@ -60,11 +57,11 @@ fn load_targets(
     mut commands: Commands,
     query: Query<(Entity, &Targets), Added<Targets>>,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut images: ResMut<Assets<Image>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    asset_cache: Res<asset_cache::AssetCache>,
 ) {
     let debug_material = materials.add(StandardMaterial {
-        base_color_texture: Some(images.add(uv_debug_texture())),
+        base_color_texture: Some(asset_cache.debug_image.clone()),
         ..default()
     });
     let cube = meshes.add(Sphere::new(1.0));
@@ -75,7 +72,7 @@ fn load_targets(
         info!("Detected Targets addition. Spawning...");
         let mut position = targets.extent.clone();
         position.y += 30.0;
-        let boundary_cube = meshes.add(Cuboid::from_size(targets.extent));
+        let _boundary_cube = meshes.add(Cuboid::from_size(targets.extent));
 
         let mut entity = commands.entity(entity_id);
         let mut base_color = Palette::Blue.to_color();
@@ -120,45 +117,6 @@ fn load_targets(
             }
         });
     }
-}
-
-// fn despawn_targets(
-//     mut commands: Commands,
-//     query: Query<Entity, Added<Targets>>,
-//     // window: Query<&Window>,
-//     asset_server: Res<AssetServer>,
-//     mut meshes: ResMut<Assets<Mesh>>,
-//     mut materials: ResMut<Assets<ColorMaterial>>,
-// ) {
-// }
-
-/// Creates a colorful test pattern
-fn uv_debug_texture() -> Image {
-    const TEXTURE_SIZE: usize = 8;
-
-    let mut palette: [u8; 32] = [
-        255, 102, 159, 255, 255, 159, 102, 255, 236, 255, 102, 255, 121, 255, 102, 255, 102, 255,
-        198, 255, 102, 198, 255, 255, 121, 102, 255, 255, 236, 102, 255, 255,
-    ];
-
-    let mut texture_data = [0; TEXTURE_SIZE * TEXTURE_SIZE * 4];
-    for y in 0..TEXTURE_SIZE {
-        let offset = TEXTURE_SIZE * y * 4;
-        texture_data[offset..(offset + TEXTURE_SIZE * 4)].copy_from_slice(&palette);
-        palette.rotate_right(4);
-    }
-
-    Image::new_fill(
-        Extent3d {
-            width: TEXTURE_SIZE as u32,
-            height: TEXTURE_SIZE as u32,
-            depth_or_array_layers: 1,
-        },
-        TextureDimension::D2,
-        &texture_data,
-        TextureFormat::Rgba8UnormSrgb,
-        RenderAssetUsages::RENDER_WORLD,
-    )
 }
 
 fn rotate(mut query: Query<(&Target, &mut Transform), With<Target>>, time: Res<Time>) {

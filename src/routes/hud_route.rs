@@ -238,8 +238,8 @@ fn enter_dev_mode(
 fn build_route(
     mut commands: Commands,
     query: Query<Entity, Added<HudRoute>>,
-    windows: Query<&Window, With<PrimaryWindow>>,
     mut meshes: ResMut<Assets<Mesh>>,
+    windows: Query<&Window, With<PrimaryWindow>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     let window = match windows.get_single() {

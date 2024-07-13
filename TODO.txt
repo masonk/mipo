@@ -19,10 +19,16 @@ SPawn a bad guy and shoot it.
 - [DONE] Throw a fireball.
 - [DONE] Mana bar
 - [DONE] double jump,
+- [DONE] more platforms
 ---
-- more platforms
+- Platforms
+    - Pick up linvel of the platform I'm grounded on
+    - get pushed by platforms from the side.
 - movement abilities
-- High jump,  trampolines
+    - High jump
+    - trampolines
+    - grappling hook
+    - jetpack
 - Skybox, better lighting, volumetric fog
 - On hit:
     - respawn in a random place within a cube

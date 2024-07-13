@@ -87,14 +87,12 @@ pub fn throw_fireball(
         return;
     }
     if mana.current < ability.mana_cost {
-        info!("Can't spawn a fireball, out of mana.");
         return;
     }
     // Put the fireball back on cooldown.
     ability.cooldown_timer.reset();
     mana.current -= ability.mana_cost;
 
-    info!("Throwing a fireball. Current mana: {}", mana.current);
     let local_transform: Transform = transform.into();
     let forward = transform.forward();
     commands
