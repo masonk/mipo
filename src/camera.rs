@@ -8,7 +8,7 @@ use bevy_lunex::prelude::*;
 use smooth_bevy_cameras::controllers::unreal::{UnrealCameraBundle, UnrealCameraController};
 pub struct CameraPlugin;
 
-use crate::GameState;
+use crate::prelude::*;
 
 #[derive(Debug, Clone, Component)]
 pub(crate) struct Flycam;
@@ -95,11 +95,17 @@ fn handle_input(
     keyboard: Res<ButtonInput<KeyCode>>,
     state: Res<State<GameState>>,
     mut next_state: ResMut<NextState<GameState>>,
+    player: Query<&Player>,
 ) {
     if keyboard.just_pressed(KeyCode::F3) {
         if *state.get() == GameState::DevMode {
-            info!("Setting GameState to InGame");
-            next_state.set(GameState::InGame);
+            if let Ok(_) = player.get_single() {
+                info!("Setting GameState to InGame");
+                next_state.set(GameState::InGame);
+            } else {
+                info!("No player: setting GameState to Prespawn");
+                next_state.set(GameState::Prespawn);
+            }
         } else {
             info!("Setting GameState to DevMode");
             next_state.set(GameState::DevMode);
