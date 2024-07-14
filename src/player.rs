@@ -153,11 +153,12 @@ fn player_movement(
                     .affine()
                     .inverse()
                     .transform_vector3(platform.linvel);
-                // translation += platform.linvel;
-                info!(
-                    "Player global transform: {player_global_transform:?}, Global linvel {} -> player linvel {}",
-                    platform.linvel, player_local_linvel
-                );
+                // info!(
+                //     "Player-local movement from input: {translation}, player-local movement from platform: {player_local_linvel}, global linvel: {}, combined: {}",
+                //     platform.linvel , translation + platform.linvel
+                // );
+                translation += platform.linvel;
+
                 // Note:  has_any_active_contacts() always returns false, because the kinematic character controller keeps the player very slightly floating.
                 // we are sort of faking this by just checking whether the player is very close to the platform.
             }
