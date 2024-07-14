@@ -73,7 +73,7 @@ fn make_spawn_floor(
                 PbrBundle {
                     mesh: shaded_handle,
                     material: white_material.clone(),
-                    transform: Transform::from_scale(Vec3::new(1., 50.0, 1.0)),
+                    transform: Transform::from_scale(Vec3::new(1., 150.0, 1.0)),
                     ..default()
                 },
                 RigidBody::Fixed,

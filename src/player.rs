@@ -230,7 +230,7 @@ fn spawn_player(
         Name::new("player"),
         SceneBundle {
             scene: assets.load("Player.gltf#Scene0"),
-            transform: Transform::from_xyz(102.173, 46.668, 54.987),
+            transform: Transform::from_xyz(102.173, 250., 54.987),
             ..default()
         },
         RigidBody::KinematicPositionBased,
