@@ -33,8 +33,9 @@ smooth-bevy-cameras = "0.11.0"
 tiff = "0.9.1"
 
 [features]
-default = ["serde"]
+default = ["serde", "desktop"]
 serde = ["dep:serde", "dep:ciborium" , "glam/serde" ]
+desktop = ["bevy/dynamic_linking"]
 
 [[bin]]
 name = "rtin"
@@ -63,3 +64,6 @@ lto = "thin"
 smooth-bevy-cameras = { git = "https://github.com/masonk/smooth-bevy-cameras.git" }
 bevy_stl = { git = "https://github.com/masonk/bevy_stl.git" }
 # bevy_firework = { git = "https://github.com/masonk/bevy_firework.git" }
+
+[target.wasm32-unknown-unknown]
+runner = "wasm-server-runner"

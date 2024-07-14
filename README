@@ -1,1 +1,18 @@
-cargo r
+# SETUP
+## DESKTOP
+
+The project is configured to use the ldd linker for windows and linux targets, as linking is slow and ldd is much faster than the default linker on those systems.
+See comments in .carg/config.toml for installing the necessary packages
+
+## WASM
+
+### SETUP
+
+`rustup target install wasm32-unknown-unknown`
+`cargo install wasm-server-runner`
+
+### RUNNING
+cargo run --no-default-features --features wasm --features serde --target wasm32-unknown-unknown
+
+# RUN
+`cargo run`

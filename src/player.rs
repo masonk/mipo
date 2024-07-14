@@ -15,7 +15,11 @@ use bevy_rapier3d::control::KinematicCharacterController;
 use bevy_rapier3d::prelude::*;
 
 const MOUSE_SENSITIVITY: f32 = 0.3;
-const GROUND_TIMER: f32 = 3.0;
+// if the user has been grounded within x seconds and hasn't jumped within that time, he's grounded.
+const GROUND_TIMER: f32 = 0.5;
+// If the player has been on a platform within this amount of time and has not jumped, we impart the platform's
+// linvel to the player.
+const ON_PLATFORM_TIMER: f32 = 0.5;
 const MOVEMENT_SPEED: f32 = 8.0;
 const JUMP_SPEED: f32 = 40.0;
 const GRAVITY: f32 = -9.81;
@@ -98,8 +102,10 @@ fn player_movement(
     >,
     mut vertical_movement: Local<f32>,
     mut grounded_timer: Local<f32>,
+    mut grounded_platform_timer: Local<f32>,
+    mut grounded_platform_linvel: Local<Vec3>,
     mut air_jumps_left: Local<u32>,
-    platforms: Query<(Entity, &Transform, &GlobalTransform, &Platform), Without<Player>>,
+    platforms: Query<(Entity, &GlobalTransform, &Platform), Without<Player>>,
     rapier_context: Res<RapierContext>,
 ) {
     let Ok((player_entity, player_transform, player_global_transform, mut controller, output)) =
@@ -142,26 +148,31 @@ fn player_movement(
     *vertical_movement += GRAVITY * delta_time * controller.custom_mass.unwrap_or(1.0);
     let mut translation = player_transform.rotation * movement;
 
-    for (platform_entity, platform_transform, platform_global_transform, platform) in &platforms {
+    for (platform_entity, platform_global_transform, platform) in &platforms {
         if let Some(_contact_pair) = rapier_context.contact_pair(player_entity, platform_entity) {
             // TODO: Figure transform the platform linvel (in world coordinates) to local player coordinates.'
             let global_platform_position = platform_global_transform.translation();
             let global_player_position = player_global_transform.translation();
             if global_player_position.y > global_platform_position.y + 3.0 {
                 // player is standing on the platform.
-                let player_local_linvel = player_global_transform
-                    .affine()
-                    .inverse()
-                    .transform_vector3(platform.linvel);
-                // info!(
-                //     "Player-local movement from input: {translation}, player-local movement from platform: {player_local_linvel}, global linvel: {}, combined: {}",
-                //     platform.linvel , translation + platform.linvel
-                // );
-                translation += platform.linvel;
-
+                *grounded_platform_timer = ON_PLATFORM_TIMER;
+                *grounded_platform_linvel = platform.linvel;
                 // Note:  has_any_active_contacts() always returns false, because the kinematic character controller keeps the player very slightly floating.
                 // we are sort of faking this by just checking whether the player is very close to the platform.
             }
+        }
+    }
+    // Rapier is not reliably returning a collision between the player and the platform on every frame
+    // This was causing slippage, where some frames the player does not get the platform's linvel
+    // We add a timeout period so that if the player has been on a platform within ON_PLATFORM_TIMER seconds,
+    // We add the linvel of the platform that the player was most recently on to the player's linvel.
+    if *grounded_platform_timer > 0.0 {
+        *grounded_platform_timer -= delta_time;
+        info!("on platform");
+        translation += *grounded_platform_linvel;
+        if jump_speed > 0.0 {
+            // If the player jumped in this frame, then immediately set him to off the platform.
+            *grounded_platform_timer = 0.0;
         }
     }
     controller.translation = Some(translation * delta_time);
