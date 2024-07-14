@@ -35,9 +35,13 @@ SPawn a bad guy and shoot it.
 - Draw a ray to target? Like a laser?
 - Button to clear targets
 - implement brownian motion for targets
+- BOUNDARIES / RESPAWN OUT OF BOUNDS
 
 - button for toggling full screen mode
 - Cooler effects for fireball
     - Explode on contact / at the end of its journey
     - better graphics
-
+- AI system, enemies
+- Death
+    - hitpoints
+    - respawn

@@ -13,10 +13,9 @@ anyhow = "1.0.86"
 # bevy = { version = "0.14.0" }
 bevy = { version = "0.14.0", features = ["dynamic_linking"] }
 # bevy_firework = { version = "0.4.0", default-features = false }
-# bevy-inspector-egui = {  path = "../bevy-inspector-egui/crates/bevy-inspector-egui" }
+bevy-inspector-egui = {version = "0.25.0" }
 bevy_log = "0.14.0"
 bevy_lunex = { git = "https://github.com/bytestring-net/bevy_lunex" }
-#bevy_lunex = { git = "https://github.com/bytestring-net/bevy_lunex", features=["debug"] }
 bevy_rapier3d = { version = "0.27.0",  features = [ "simd-stable", "debug-render-3d" ] }
 bevy_stl = "^0.14.0"
 # bevy_utilitarian = "0.5.0"

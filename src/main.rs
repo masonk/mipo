@@ -106,7 +106,7 @@ fn main() {
                 terrain_path: "assets/grand_canyon_small_heightmap.png".into(),
             },
             // ThirdPersonCameraPlugin,
-            // bevy_inspector_egui::quick::WorldInspectorPlugin::new(),
+            bevy_inspector_egui::quick::WorldInspectorPlugin::new(),
             bevy_stl::StlPlugin,
             components::ComponentPlugin,
         ))
