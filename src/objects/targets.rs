@@ -10,7 +10,7 @@ use bevy::{
 };
 use bevy_rapier3d::prelude::*;
 
-use crate::palette::Palette;
+use crate::prelude::*;
 use crate::{asset_cache, camera::FirstPersonCam};
 use rand::{self, Rng};
 
@@ -81,6 +81,7 @@ fn load_targets(
         entity.insert((
             Name::new(targets.name.clone()),
             SpatialBundle::from_transform(Transform::from_translation(position)), // Transform::from_translation(position),
+            Leash(1000.),
         ));
         // This spawns a transparent boundary cube to show the volume where targets can possibly spawn.
         // .insert(PbrBundle {

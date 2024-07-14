@@ -22,7 +22,7 @@ pub struct HudRoute;
 pub struct HudRoutePlugin;
 
 #[derive(Resource)]
-struct GameWorldImage(Handle<Image>);
+pub struct GameWorldImage(pub Handle<Image>);
 
 #[derive(Component, Debug, Default, Clone, PartialEq)]
 pub struct GameWorldRoute;
@@ -34,19 +34,15 @@ impl Plugin for HudRoutePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(PreUpdate, build_route.before(UiSystems::Compute));
         app.add_systems(OnEnter(GameState::StartingUp), enter_starting_up);
-        app.add_systems(OnEnter(GameState::InGame), enter_in_game.in_set(CamerasSet));
         app.add_systems(
             OnEnter(GameState::DevMode),
             enter_dev_mode.in_set(CamerasSet),
         );
         app.add_systems(
-            Update,
-            update_gameworld_viewport.run_if(in_state(GameState::InGame)),
+            OnEnter(GameState::Prespawn),
+            enter_spawning.in_set(CamerasSet),
         );
-        app.add_systems(
-            Update,
-            update_gameworld_viewport.run_if(in_state(GameState::DevMode)),
-        );
+        app.add_systems(Update, update_gameworld_viewport);
     }
 }
 
@@ -61,7 +57,7 @@ fn update_gameworld_viewport(
 ) {
     let game_world = match game_world {
         Some(v) => v,
-        None => return warn!("Cannot update GameWorld because the resource isn't available"),
+        None => return,
     };
 
     match game_world_route.get_single() {
@@ -154,40 +150,6 @@ fn enter_starting_up(
     commands.insert_resource(new_game_world);
 }
 
-fn enter_in_game(
-    mut commands: Commands,
-    player: Query<Entity, With<crate::player::Player>>,
-    game_world: Res<GameWorldImage>,
-    cam: Query<&Camera, With<FirstPersonCam>>,
-) {
-    if let Ok(_) = cam.get_single() {
-        return;
-    }
-
-    commands.entity(player.single()).with_children(|child| {
-        info!("Spawning FirstPersonCam");
-        child.spawn((
-            // StateScoped(GameState::InGame),
-            Camera3dBundle {
-                projection: Projection::Perspective(PerspectiveProjection {
-                    fov: 50.0_f32.to_radians(),
-                    ..default()
-                }),
-                camera: Camera {
-                    is_active: true,
-                    order: 10,
-                    target: game_world.0.clone().into(),
-                    ..default()
-                },
-                transform: Transform::from_xyz(0.0, 0.7, -1.0),
-                ..default()
-            },
-            Name::new("FirstPersonCamera"),
-            FirstPersonCam,
-        ));
-    });
-}
-
 fn enter_dev_mode(
     mut commands: Commands,
     hud_entity: Query<Entity, With<HudRoute>>,
@@ -233,6 +195,16 @@ fn enter_dev_mode(
                     ));
             });
     }
+}
+
+fn enter_spawning(
+    commands: Commands,
+    hud_entity: Query<Entity, With<HudRoute>>,
+    game_world: Res<GameWorldImage>,
+    cam: Query<&Camera, With<Flycam>>,
+) {
+    info!("PRESPAWNING: creating flycam");
+    enter_dev_mode(commands, hud_entity, game_world, cam);
 }
 
 fn build_route(

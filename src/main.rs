@@ -29,6 +29,7 @@ mod objects;
 mod palette;
 mod physics;
 mod player;
+mod prelude;
 mod routes;
 mod rtin;
 mod world;
@@ -41,15 +42,27 @@ use bevy_stl;
 use smooth_bevy_cameras;
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-enum GameState {
+pub enum GameState {
     #[default]
     StartingUp,
     DevMode,
+    // Flycam / exhibition mode where the player can click to respawn
+    Prespawn,
+    // Transitory state where we are setting up entities, such as the player entity
+    // after the user has initiated respawn
+    Spawning,
     InGame,
 }
 
+// #[derive(SubStates, Clone, PartialEq, Eq, Hash, Debug, Default)]
+// #[source(GameState = GameState::InGame)]
+// enum InGameState {
+//     Playing,
+//     Spawning
+// }
+
 fn finish_setup(mut game_state: ResMut<NextState<GameState>>) {
-    game_state.set(GameState::InGame)
+    game_state.set(GameState::Prespawn)
 }
 
 // cargo run  --target wasm32-unknown-unknown  assets/grand_canyon_small_heightmap.png

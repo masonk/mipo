@@ -1,16 +1,15 @@
-use bevy::{
-    pbr::wireframe::{Wireframe, WireframeConfig},
-    prelude::*,
-};
+use bevy::{pbr::wireframe::WireframeConfig, prelude::*};
 
-use crate::{bevy_rtin, bevy_rtin::MeshOptions};
-use bevy_rapier3d::math::Vect;
-use bevy_rapier3d::prelude::*;
+use crate::{bevy_rtin, bevy_rtin::MeshOptions, prelude::*};
+use bevy_rapier3d::{math::Vect, prelude::*};
 use std::path::PathBuf;
 
 pub struct WorldPlugin {
     pub(crate) terrain_path: PathBuf,
 }
+
+#[derive(Component, Debug)]
+pub struct Leash(pub f32);
 
 impl Plugin for WorldPlugin {
     fn build(&self, app: &mut App) {
@@ -18,7 +17,12 @@ impl Plugin for WorldPlugin {
             Startup,
             (make_spawn_floor(self.terrain_path.clone()), spawn_light),
         );
-        app.add_systems(Update, (wireframe_control));
+        app.add_systems(Update, wireframe_control);
+        app.add_systems(
+            Update,
+            handle_prespawning_inputs.run_if(in_state(GameState::Prespawn)),
+        );
+        app.add_systems(FixedUpdate, leash_system);
     }
 }
 fn wireframe_control(
@@ -34,6 +38,17 @@ fn wireframe_control(
         );
         config.global = !config.global;
         rapier_wireframes.enabled = !rapier_wireframes.enabled;
+    }
+}
+fn handle_prespawning_inputs(
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    mut next_state: ResMut<NextState<GameState>>,
+    mut mouse: Res<ButtonInput<MouseButton>>,
+    mut config: ResMut<WireframeConfig>,
+    mut rapier_wireframes: ResMut<DebugRenderContext>,
+) {
+    if mouse.just_pressed(MouseButton::Left) {
+        next_state.set(GameState::Spawning);
     }
 }
 fn make_spawn_floor(
@@ -119,6 +134,21 @@ fn spawn_light(mut commands: Commands) {
                 },
                 Name::new(format!("world_light_{x}_{z}")),
             ));
+        }
+    }
+}
+
+fn leash_system(
+    mut commands: Commands,
+    mut n: Local<usize>,
+    leashes: Query<(Entity, &GlobalTransform, &Leash)>,
+) {
+    *n = (*n + 1) % 10;
+    if *n == 0 {
+        for (entity, global_transform, leash) in &leashes {
+            if global_transform.translation().length() > leash.0 {
+                commands.entity(entity).despawn_recursive();
+            }
         }
     }
 }

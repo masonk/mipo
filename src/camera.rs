@@ -1,9 +1,8 @@
-use crate::palette::Palette;
 use bevy::{
     prelude::*,
-    sprite::{Anchor, MaterialMesh2dBundle, Mesh2dHandle, Sprite},
+    sprite::{Anchor, Sprite},
     window::CursorGrabMode,
-    window::{PrimaryWindow, WindowResized},
+    window::PrimaryWindow,
 };
 use bevy_lunex::prelude::*;
 use smooth_bevy_cameras::controllers::unreal::{UnrealCameraBundle, UnrealCameraController};
@@ -23,6 +22,7 @@ impl Plugin for CameraPlugin {
         app.add_systems(Update, handle_input);
         app.add_systems(OnEnter(GameState::InGame), enter_in_game);
         app.add_systems(OnEnter(GameState::DevMode), enter_dev_mode);
+        app.add_systems(OnEnter(GameState::Prespawn), enter_prespawn);
     }
 }
 
@@ -137,6 +137,35 @@ fn enter_in_game(
         fly_cam.is_active = false;
     } else {
         warn!("Unable to find Flycam to deactivate it.");
+    }
+}
+
+fn enter_prespawn(
+    mut windows: Query<&mut Window, With<PrimaryWindow>>,
+    mut fps_cam: Query<&mut Camera, With<FirstPersonCam>>,
+    mut fly_cam: Query<
+        (&mut UnrealCameraController, &mut Camera),
+        (With<Flycam>, Without<FirstPersonCam>),
+    >,
+) {
+    let mut window = match windows.get_single_mut() {
+        Ok(w) => w,
+        Err(e) => {
+            return warn!("Couldn't find the PrimaryWindow for disabling cursor/enabling recticle")
+        }
+    };
+    window.cursor.visible = false;
+    window.cursor.grab_mode = CursorGrabMode::Locked;
+    if let Ok(mut fps_cam) = fps_cam.get_single_mut() {
+        fps_cam.is_active = false;
+    } else {
+        warn!("Unable to find FirstPersonCam to deactivate it.");
+    }
+    if let Ok((mut controller, mut fly_cam)) = fly_cam.get_single_mut() {
+        controller.enabled = true;
+        fly_cam.is_active = true;
+    } else {
+        warn!("Unable to find Flycam to activate it.");
     }
 }
 

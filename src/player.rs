@@ -1,12 +1,14 @@
-use std::time::Duration;
+use std::{ops::DerefMut, time::Duration};
 
 use crate::{
     camera::FirstPersonCam,
     items::{FireballAbility, Platform},
     mana::{Mana, ManaRegen},
+    prelude::*,
     GameState,
 };
 use bevy::{
+    ecs::component::StorageType,
     input::{mouse::MouseMotion, InputSystem},
     log::prelude::*,
     prelude::*,
@@ -25,8 +27,19 @@ const JUMP_SPEED: f32 = 40.0;
 const GRAVITY: f32 = -9.81;
 const AIR_JUMPS: u32 = 10;
 
-#[derive(Component, Default)]
+#[derive(Default)]
 pub struct Player;
+
+impl Component for Player {
+    const STORAGE_TYPE: bevy::ecs::component::StorageType = StorageType::Table;
+    fn register_component_hooks(hooks: &mut bevy::ecs::component::ComponentHooks) {
+        hooks.on_remove(|mut world, _player_entity, _component_id| {
+            let mut state: Mut<NextState<GameState>> = world.resource_mut();
+            info!("Player despawned, setting GameState to Prespawn.");
+            state.set(GameState::Prespawn);
+        });
+    }
+}
 
 pub struct PlayerPlugin;
 
@@ -35,7 +48,7 @@ impl Plugin for PlayerPlugin {
         info!("Installing PlayerPlugin");
         app.init_resource::<MovementInput>()
             .init_resource::<LookInput>()
-            .add_systems(OnEnter(GameState::StartingUp), spawn_player)
+            .add_systems(OnEnter(GameState::Spawning), spawn_player)
             .add_systems(PreUpdate, handle_input.after(InputSystem))
             .add_systems(Update, player_look)
             .add_systems(FixedUpdate, player_movement);
@@ -168,7 +181,6 @@ fn player_movement(
     // We add the linvel of the platform that the player was most recently on to the player's linvel.
     if *grounded_platform_timer > 0.0 {
         *grounded_platform_timer -= delta_time;
-        info!("on platform");
         translation += *grounded_platform_linvel;
         if jump_speed > 0.0 {
             // If the player jumped in this frame, then immediately set him to off the platform.
@@ -195,7 +207,7 @@ fn player_look(
     }
     let mut player_transform = match player.get_single_mut() {
         Ok(transform) => transform,
-        Err(e) => return warn!("Failed to look up player transform: {e}"),
+        Err(e) => return,
     };
 
     // Rotating the player in the xz plane also rotates the player's child camera
@@ -212,7 +224,9 @@ fn player_look(
 fn spawn_player(
     mut commands: Commands,
     assets: Res<AssetServer>, // mut meshes: ResMut<Assets<Mesh>>,
-                              // mut materials: ResMut<Assets<StandardMaterial>>,
+    // mut materials: ResMut<Assets<StandardMaterial>>,
+    mut next_state: ResMut<NextState<GameState>>,
+    game_world: Res<GameWorldImage>,
 ) {
     info!("Spawning Player");
     let flashlight = (
@@ -244,6 +258,7 @@ fn spawn_player(
             transform: Transform::from_xyz(102.173, 250., 54.987),
             ..default()
         },
+        Leash(1000.),
         RigidBody::KinematicPositionBased,
         Collider::cuboid(0.3, 1.0, 0.3),
         ActiveEvents::COLLISION_EVENTS, // Make sure that we always solve for player contacts.
@@ -287,6 +302,26 @@ fn spawn_player(
 
     commands.spawn(player).with_children(|b| {
         b.spawn(flashlight);
+        b.spawn((
+            // StateScoped(GameState::InGame),
+            Camera3dBundle {
+                projection: Projection::Perspective(PerspectiveProjection {
+                    fov: 50.0_f32.to_radians(),
+                    ..default()
+                }),
+                camera: Camera {
+                    is_active: true,
+                    order: 10,
+                    target: game_world.0.clone().into(),
+                    ..default()
+                },
+                transform: Transform::from_xyz(0.0, 0.7, -1.0)
+                    .looking_at(Vec3::new(0., -10., -1.), Vec3::Y),
+                ..default()
+            },
+            Name::new("FirstPersonCamera"),
+            FirstPersonCam,
+        ));
         // b.spawn((
         //     Camera3dBundle {
         //         projection: Projection::Perspective(PerspectiveProjection {
@@ -300,4 +335,5 @@ fn spawn_player(
         //     FirstPersonCam,
         // ));
     });
+    next_state.set(GameState::InGame)
 }

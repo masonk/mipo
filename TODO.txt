@@ -22,8 +22,9 @@ SPawn a bad guy and shoot it.
 - [DONE] more platforms
 - [DONE] Pick up linvel of the platform I'm grounded on
 - [DONE] cool effect for fireball
+- [DONE] respawn, leashing
 
----
+--- TODOS ---
 - WASM target  
     - need to redo resources to abstract away the file system
 - movement abilities
@@ -32,12 +33,10 @@ SPawn a bad guy and shoot it.
     - grappling hook
     - jetpack
 - Skybox, better lighting, volumetric fog
-- On hit:
-    - respawn in a random place within a cube
+
 - Tracer for weapons
 - Button to clear targets
 - implement brownian motion for targets
-- BOUNDARIES / RESPAWN OUT OF BOUNDS
 - Netcode / multiplayer
 - button for toggling full screen mode
 - Fireball
