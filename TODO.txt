@@ -20,9 +20,12 @@ SPawn a bad guy and shoot it.
 - [DONE] Mana bar
 - [DONE] double jump,
 - [DONE] more platforms
+- [DONE] Pick up linvel of the platform I'm grounded on
+- [DONE] cool effect for fireball
+
 ---
 - Platforms
-    - Pick up linvel of the platform I'm grounded on
+    - track down the slight inaccuracy in the platform linvel code of the player_movement system.
     - get pushed by platforms from the side.
 - movement abilities
     - High jump
@@ -38,9 +41,8 @@ SPawn a bad guy and shoot it.
 - BOUNDARIES / RESPAWN OUT OF BOUNDS
 
 - button for toggling full screen mode
-- Cooler effects for fireball
+- Fireball
     - Explode on contact / at the end of its journey
-    - better graphics
 - AI system, enemies
 - Death
     - hitpoints

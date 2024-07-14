@@ -1,8 +1,14 @@
 use std::time::Duration;
 
 use bevy::prelude::*;
-
+use bevy_firework::{
+    core::{BlendMode, ParticleSpawnerBundle, ParticleSpawnerSettings},
+    emission_shape::EmissionShape,
+};
 use bevy_rapier3d::prelude::*;
+use bevy_utilitarian::prelude::*;
+use std::f32::consts::PI;
+
 pub struct FireballPlugin;
 use crate::{camera::FirstPersonCam, mana::Mana};
 impl Plugin for FireballPlugin {
@@ -96,7 +102,35 @@ pub fn throw_fireball(
     let local_transform: Transform = transform.into();
     let forward = transform.forward();
     commands
-        .spawn((
+        .spawn(
+            (ParticleSpawnerBundle::from_settings(ParticleSpawnerSettings {
+                one_shot: false,
+                rate: 1000.0,
+                emission_shape: EmissionShape::Sphere(1.0),
+                lifetime: RandF32::constant(0.75),
+                inherit_parent_velocity: true,
+                initial_velocity: RandVec3 {
+                    magnitude: RandF32 { min: 0., max: 10. },
+                    direction: Vec3::Y,
+                    spread: 30. / 180. * PI,
+                },
+                initial_scale: RandF32 {
+                    min: 0.02,
+                    max: 0.08,
+                },
+                scale_curve: ParamCurve::constant(1.),
+                color: Gradient::linear(vec![
+                    (0., LinearRgba::new(0.7, 0.3, 0.1, 1.)),
+                    (0.7, LinearRgba::new(0.3, 0.1, 0.1, 1.)),
+                    (1., LinearRgba::new(0.1, 0.1, 0.1, 0.)),
+                ]),
+                blend_mode: BlendMode::Blend,
+                linear_drag: 0.1,
+                pbr: false,
+                ..default()
+            })),
+        )
+        .insert((
             PbrBundle {
                 mesh: meshes.add(
                     Sphere::new(ability.projectile_radius)

@@ -18,7 +18,7 @@ bevy_log = "0.14.0"
 bevy_lunex = { git = "https://github.com/bytestring-net/bevy_lunex" }
 bevy_rapier3d = { version = "0.27.0",  features = [ "simd-stable", "debug-render-3d" ] }
 bevy_stl = "^0.14.0"
-# bevy_utilitarian = "0.5.0"
+bevy_utilitarian = "0.5.0"
 ciborium = { version = "^0.2.2", optional = true }
 clap = { version = "4.5.7", features = ["derive"] }
 colorgrad = "0.6.2"

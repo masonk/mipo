@@ -8,6 +8,7 @@ use bevy::{
     prelude::*,
     window::{Cursor, CursorGrabMode, WindowResolution},
 };
+use bevy_firework::plugin::ParticleSystemPlugin;
 use clap::Parser;
 use std::path::PathBuf;
 // // Preprocess an image for rtin meshing.
@@ -109,6 +110,7 @@ fn main() {
             bevy_inspector_egui::quick::WorldInspectorPlugin::new(),
             bevy_stl::StlPlugin,
             components::ComponentPlugin,
+            ParticleSystemPlugin,
         ))
         .init_state::<GameState>()
         .add_systems(Update, finish_setup.run_if(in_state(GameState::StartingUp)))
