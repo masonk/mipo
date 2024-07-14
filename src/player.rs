@@ -255,7 +255,8 @@ fn spawn_player(
         Name::new("player"),
         SceneBundle {
             scene: assets.load("Player.gltf#Scene0"),
-            transform: Transform::from_xyz(102.173, 250., 54.987),
+            transform: Transform::from_xyz(102.173, 250., 54.987)
+                .looking_at(Vec3::new(0., -1., -1.), Vec3::Y),
             ..default()
         },
         Leash(1000.),
@@ -315,8 +316,7 @@ fn spawn_player(
                     target: game_world.0.clone().into(),
                     ..default()
                 },
-                transform: Transform::from_xyz(0.0, 0.7, -1.0)
-                    .looking_at(Vec3::new(0., -10., -1.), Vec3::Y),
+                transform: Transform::from_xyz(0.0, 0.7, -1.0),
                 ..default()
             },
             Name::new("FirstPersonCamera"),

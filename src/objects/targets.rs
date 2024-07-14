@@ -107,6 +107,12 @@ fn load_targets(
                     Name::new(format!("target{i}")),
                     RigidBody::Dynamic,
                     GravityScale(0.0),
+                    Damping {
+                        linear_damping: 1.0,
+                        angular_damping: 0.1,
+                        ..default()
+                    },
+                    ColliderMassProperties::Density(0.1),
                     collider.clone(),
                     PbrBundle {
                         transform: Transform::from_translation(translation),

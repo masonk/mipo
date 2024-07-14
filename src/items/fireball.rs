@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use crate::prelude::*;
 use bevy::prelude::*;
 use bevy_firework::{
     core::{BlendMode, ParticleSpawnerBundle, ParticleSpawnerSettings},
@@ -8,7 +9,6 @@ use bevy_firework::{
 use bevy_rapier3d::prelude::*;
 use bevy_utilitarian::prelude::*;
 use std::f32::consts::PI;
-
 pub struct FireballPlugin;
 use crate::{camera::FirstPersonCam, mana::Mana};
 impl Plugin for FireballPlugin {
@@ -55,7 +55,7 @@ pub fn clean_fireball(
     for (entity, mut fireball) in &mut fireballs {
         fireball.lifetime.tick(time.delta());
         if fireball.lifetime.finished() {
-            commands.entity(entity).despawn();
+            commands.entity(entity).despawn_recursive();
         }
     }
 }
@@ -153,6 +153,7 @@ pub fn throw_fireball(
             Fireball {
                 lifetime: ability.projectile_lifetime.clone(),
             },
+            Leash(1000.),
         ))
         .insert((
             RigidBody::Dynamic,

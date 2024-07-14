@@ -1,4 +1,5 @@
 use crate::asset_cache::AssetCache;
+use crate::prelude::*;
 use bevy::{prelude::*, time::Timer};
 use bevy_rapier3d::{na::Quaternion, prelude::*};
 use rand::seq::SliceRandom;
@@ -88,6 +89,7 @@ fn update_platforms(
                         .normalize()
                             * thread_rng().gen_range(3.0..10.0),
                     },
+                    Leash(1000.),
                 ))
                 .insert((
                     RigidBody::KinematicPositionBased,
