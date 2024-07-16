@@ -1,20 +1,22 @@
 use std::{ops::DerefMut, time::Duration};
 
 use crate::{
+    asset_cache::AssetCache,
     camera::FirstPersonCam,
+    hitpoints::{Hp, HpRegen},
     items::{FireballAbility, Platform},
     mana::{Mana, ManaRegen},
     prelude::*,
     GameState,
 };
 use bevy::{
+    core_pipeline::Skybox,
     ecs::component::StorageType,
     input::{mouse::MouseMotion, InputSystem},
     log::prelude::*,
     prelude::*,
 };
-use bevy_rapier3d::control::KinematicCharacterController;
-use bevy_rapier3d::prelude::*;
+use bevy_rapier3d::{control::KinematicCharacterController, prelude::*};
 
 const MOUSE_SENSITIVITY: f32 = 0.3;
 // if the user has been grounded within x seconds and hasn't jumped within that time, he's grounded.
@@ -224,6 +226,7 @@ fn player_look(
 fn spawn_player(
     mut commands: Commands,
     assets: Res<AssetServer>, // mut meshes: ResMut<Assets<Mesh>>,
+    cache: Res<AssetCache>,
     // mut materials: ResMut<Assets<StandardMaterial>>,
     mut next_state: ResMut<NextState<GameState>>,
     game_world: Res<GameWorldImage>,
@@ -291,13 +294,21 @@ fn spawn_player(
             damping: 1.,
             ..default()
         },
+        Hp {
+            current: 100,
+            max: 100,
+        },
+        HpRegen {
+            tick_timer: Timer::new(Duration::from_millis(1000), TimerMode::Repeating),
+            regen_per_tick: 5,
+        },
         Mana {
             current: 100,
             max: 100,
         },
         ManaRegen {
             regen_mana_timer: Timer::new(Duration::from_millis(1000), TimerMode::Repeating),
-            regen_per_tick: 3,
+            regen_per_tick: 5,
         },
     );
 
@@ -318,6 +329,10 @@ fn spawn_player(
                 },
                 transform: Transform::from_xyz(0.0, 0.7, -1.0),
                 ..default()
+            },
+            Skybox {
+                image: cache.skybox.clone(),
+                brightness: 1000.,
             },
             Name::new("FirstPersonCamera"),
             FirstPersonCam,

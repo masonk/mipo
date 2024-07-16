@@ -3,7 +3,7 @@
 #![feature(iter_array_chunks)]
 #![feature(array_chunks)]
 use bevy::{
-    ecs::schedule::{LogLevel, ScheduleBuildSettings},
+    core_pipeline::Skybox,
     pbr::wireframe::{WireframeConfig, WireframePlugin},
     prelude::*,
     window::{Cursor, CursorGrabMode, WindowResolution},
@@ -22,13 +22,16 @@ mod asset_cache;
 mod bevy_rtin;
 mod camera;
 mod components;
+mod enemy;
 mod geometry;
+mod hitpoints;
 mod items;
 mod mana;
 mod objects;
 mod palette;
 mod physics;
 mod player;
+mod player_hud;
 mod prelude;
 mod routes;
 mod rtin;
@@ -135,6 +138,8 @@ fn main() {
         .add_plugins(camera::CameraPlugin)
         .add_systems(Startup, startup)
         .add_plugins((
+            hitpoints::HpPlugin,
+            player_hud::PlayerHudPlugin,
             objects::TargetsPlugin,
             items::ItemsPlugin,
             routes::RoutesPlugin,

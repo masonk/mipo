@@ -25,26 +25,24 @@ SPawn a bad guy and shoot it.
 - [DONE] respawn, leashing
 
 --- TODOS ---
-- WASM target  
-    - need to redo resources to abstract away the file system
+- Fireball
+    - Explode on contact / at the end of its journey
+- AI system, enemies
+- Game objectives
 - movement abilities
     - High jump
     - trampolines
     - grappling hook
     - jetpack
 - Skybox, better lighting, volumetric fog
-
 - Tracer for weapons
 - Button to clear targets
 - implement brownian motion for targets
 - Netcode / multiplayer
 - button for toggling full screen mode
-- Fireball
-    - Explode on contact / at the end of its journey
-- AI system, enemies
+- Make the game terrain much bigger
 - Death
     - hitpoints
-    - respawn
 - Platforms
     - Somehow when the player is looking down he starts slipping off the platform
     - get pushed by platforms from the side.

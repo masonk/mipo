@@ -1,4 +1,5 @@
 use bevy::{
+    core_pipeline::Skybox,
     prelude::*,
     sprite::{Anchor, Sprite},
     window::CursorGrabMode,

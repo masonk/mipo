@@ -16,6 +16,7 @@ impl Plugin for AssetCachePlugin {
 pub struct AssetCache {
     pub debug_image: Handle<Image>,
     pub debug_material: Handle<StandardMaterial>,
+    pub skybox: Handle<Image>,
 }
 
 impl AssetCache {
@@ -45,9 +46,12 @@ fn preload_assets(
         base_color_texture: Some(debug_image.clone()),
         ..default()
     });
+    let skybox = asset_server.load("sky1.png");
+
     commands.insert_resource(AssetCache {
         debug_image,
         debug_material,
+        skybox,
     });
 }
 

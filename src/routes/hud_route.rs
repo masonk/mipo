@@ -1,6 +1,7 @@
 use bevy::sprite::{Anchor, MaterialMesh2dBundle, Mesh2dHandle};
 use bevy::{
     asset::AssetEvent,
+    core_pipeline::Skybox,
     math::vec3,
     prelude::*,
     render::render_resource::{
@@ -12,9 +13,8 @@ use bevy::{
 use bevy_lunex::prelude::*;
 use smooth_bevy_cameras::controllers::unreal::{UnrealCameraBundle, UnrealCameraController};
 
-use crate::camera::{FirstPersonCam, Flycam};
-use crate::palette::Palette;
-use crate::GameState;
+use crate::camera::Flycam;
+use crate::prelude::*;
 
 #[derive(Component, Debug, Default, Clone, PartialEq)]
 pub struct HudRoute;
@@ -34,10 +34,7 @@ impl Plugin for HudRoutePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(PreUpdate, build_route.before(UiSystems::Compute));
         app.add_systems(OnEnter(GameState::StartingUp), enter_starting_up);
-        app.add_systems(
-            OnEnter(GameState::DevMode),
-            enter_dev_mode.in_set(CamerasSet),
-        );
+        app.add_systems(OnEnter(GameState::DevMode), enter_dev_mode);
         app.add_systems(
             OnEnter(GameState::Prespawn),
             enter_spawning.in_set(CamerasSet),
@@ -155,6 +152,7 @@ fn enter_dev_mode(
     hud_entity: Query<Entity, With<HudRoute>>,
     game_world: Res<GameWorldImage>,
     cam: Query<&Camera, With<Flycam>>,
+    cache: Res<AssetCache>,
 ) {
     if let Ok(_) = cam.get_single() {
         return;
@@ -184,6 +182,10 @@ fn enter_dev_mode(
                         ..default()
                     })
                     .insert((
+                        Skybox {
+                            image: cache.skybox.clone(),
+                            brightness: 1000.,
+                        },
                         // StateScoped(GameState::DevMode),
                         Flycam,
                         UnrealCameraBundle::new(
@@ -202,9 +204,10 @@ fn enter_spawning(
     hud_entity: Query<Entity, With<HudRoute>>,
     game_world: Res<GameWorldImage>,
     cam: Query<&Camera, With<Flycam>>,
+    cache: Res<AssetCache>,
 ) {
     info!("PRESPAWNING: creating flycam");
-    enter_dev_mode(commands, hud_entity, game_world, cam);
+    enter_dev_mode(commands, hud_entity, game_world, cam, cache);
 }
 
 fn build_route(
